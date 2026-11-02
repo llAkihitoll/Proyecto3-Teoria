@@ -1,0 +1,183 @@
+# MT alteradora: duplica la cadena, w -> ww, con w en {a, b}*
+#
+# Idea: toma el siguiente símbolo original, lo guarda en la caché y lo marca
+# (a -> X, b -> Y). Lleva el símbolo en la caché hasta el final de la cinta y
+# escribe su copia (a -> P, b -> Q). Regresa a la última marca y repite. Cuando
+# ya no quedan originales, restaura las marcas y copias a 'a' y 'b'.
+#
+#   q0: toma el siguiente símbolo original, o pasa a restaurar si encuentra una copia
+#   q1: lleva el símbolo guardado en la caché hasta el primer blanco y escribe la copia
+#   q2: regresa a la izquierda hasta la última marca X/Y
+#   q3: restaura las copias (P -> a, Q -> b) hacia la derecha
+#   q4: restaura las marcas (X -> a, Y -> b) hacia la izquierda
+#   qf: aceptación, con el cabezal al inicio de ww
+mt:
+  states: [q0, q1, q2, q3, q4, qf]
+  input_alphabet: [a, b]
+  tape_alphabet: [a, b, X, Y, P, Q, B]
+  initial_state: q0
+  accept_states: [qf]
+  transitions:
+    # q0: guardar el símbolo en la caché y marcarlo
+    - state: q0
+      read: [a, B]
+      write: [a, X]
+      move: R
+      next: q1
+    - state: q0
+      read: [b, B]
+      write: [b, Y]
+      move: R
+      next: q1
+    # q0: no quedan originales, empieza la restauración
+    - state: q0
+      read: [P, B]
+      write: [B, P]
+      move: S
+      next: q3
+    - state: q0
+      read: [Q, B]
+      write: [B, Q]
+      move: S
+      next: q3
+    # q0: cadena vacía, ww = ε
+    - state: q0
+      read: [B, B]
+      write: [B, B]
+      move: S
+      next: qf
+
+    # q1 con caché a: avanzar hasta el final y escribir P
+    - state: q1
+      read: [a, a]
+      write: [a, a]
+      move: R
+      next: q1
+    - state: q1
+      read: [b, a]
+      write: [a, b]
+      move: R
+      next: q1
+    - state: q1
+      read: [P, a]
+      write: [a, P]
+      move: R
+      next: q1
+    - state: q1
+      read: [Q, a]
+      write: [a, Q]
+      move: R
+      next: q1
+    - state: q1
+      read: [B, a]
+      write: [B, P]
+      move: L
+      next: q2
+
+    # q1 con caché b: avanzar hasta el final y escribir Q
+    - state: q1
+      read: [a, b]
+      write: [b, a]
+      move: R
+      next: q1
+    - state: q1
+      read: [b, b]
+      write: [b, b]
+      move: R
+      next: q1
+    - state: q1
+      read: [P, b]
+      write: [b, P]
+      move: R
+      next: q1
+    - state: q1
+      read: [Q, b]
+      write: [b, Q]
+      move: R
+      next: q1
+    - state: q1
+      read: [B, b]
+      write: [B, Q]
+      move: L
+      next: q2
+
+    # q2: regresar hasta la última marca
+    - state: q2
+      read: [a, B]
+      write: [B, a]
+      move: L
+      next: q2
+    - state: q2
+      read: [b, B]
+      write: [B, b]
+      move: L
+      next: q2
+    - state: q2
+      read: [P, B]
+      write: [B, P]
+      move: L
+      next: q2
+    - state: q2
+      read: [Q, B]
+      write: [B, Q]
+      move: L
+      next: q2
+    - state: q2
+      read: [X, B]
+      write: [B, X]
+      move: R
+      next: q0
+    - state: q2
+      read: [Y, B]
+      write: [B, Y]
+      move: R
+      next: q0
+
+    # q3: restaurar copias hacia la derecha
+    - state: q3
+      read: [P, B]
+      write: [B, a]
+      move: R
+      next: q3
+    - state: q3
+      read: [Q, B]
+      write: [B, b]
+      move: R
+      next: q3
+    - state: q3
+      read: [B, B]
+      write: [B, B]
+      move: L
+      next: q4
+
+    # q4: restaurar marcas hacia la izquierda y volver al inicio
+    - state: q4
+      read: [a, B]
+      write: [B, a]
+      move: L
+      next: q4
+    - state: q4
+      read: [b, B]
+      write: [B, b]
+      move: L
+      next: q4
+    - state: q4
+      read: [X, B]
+      write: [B, a]
+      move: L
+      next: q4
+    - state: q4
+      read: [Y, B]
+      write: [B, b]
+      move: L
+      next: q4
+    - state: q4
+      read: [B, B]
+      write: [B, B]
+      move: R
+      next: qf
+  inputs:
+    - "abbab"
+    - "aabbb"
+    - "babaa"
+    - "baaaab"
