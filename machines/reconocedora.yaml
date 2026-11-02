@@ -1,0 +1,123 @@
+# MT reconocedora: L = { a^n b^n c^n | n >= 1 }
+#
+# Idea: en cada ronda marca una 'a' con X, una 'b' con Y y una 'c' con Z, y
+# regresa a la X más a la derecha. Cuando ya no quedan 'a', verifica que solo
+# queden Y seguidas de Z (sin b ni c sueltas) y acepta.
+#
+#   q0: inicia una ronda (marca a -> X) o pasa a verificar si lee Y
+#   q1: avanza sobre a/Y hasta la primera b y la marca con Y
+#   q2: avanza sobre b/Z hasta la primera c y la marca con Z
+#   q3: regresa a la izquierda hasta encontrar X
+#   q4: verifica que solo queden Y
+#   q5: verifica que solo queden Z hasta el blanco
+#   qf: aceptación
+#
+# Esta máquina no necesita la caché, por eso siempre lee y escribe B en ella.
+mt:
+  states: [q0, q1, q2, q3, q4, q5, qf]
+  input_alphabet: [a, b, c]
+  tape_alphabet: [a, b, c, X, Y, Z, B]
+  initial_state: q0
+  accept_states: [qf]
+  transitions:
+    # q0: marcar una a o iniciar la verificación
+    - state: q0
+      read: [a, B]
+      write: [B, X]
+      move: R
+      next: q1
+    - state: q0
+      read: [Y, B]
+      write: [B, Y]
+      move: R
+      next: q4
+
+    # q1: buscar la primera b
+    - state: q1
+      read: [a, B]
+      write: [B, a]
+      move: R
+      next: q1
+    - state: q1
+      read: [Y, B]
+      write: [B, Y]
+      move: R
+      next: q1
+    - state: q1
+      read: [b, B]
+      write: [B, Y]
+      move: R
+      next: q2
+
+    # q2: buscar la primera c
+    - state: q2
+      read: [b, B]
+      write: [B, b]
+      move: R
+      next: q2
+    - state: q2
+      read: [Z, B]
+      write: [B, Z]
+      move: R
+      next: q2
+    - state: q2
+      read: [c, B]
+      write: [B, Z]
+      move: L
+      next: q3
+
+    # q3: regresar hasta la X
+    - state: q3
+      read: [a, B]
+      write: [B, a]
+      move: L
+      next: q3
+    - state: q3
+      read: [b, B]
+      write: [B, b]
+      move: L
+      next: q3
+    - state: q3
+      read: [Y, B]
+      write: [B, Y]
+      move: L
+      next: q3
+    - state: q3
+      read: [Z, B]
+      write: [B, Z]
+      move: L
+      next: q3
+    - state: q3
+      read: [X, B]
+      write: [B, X]
+      move: R
+      next: q0
+
+    # q4: solo deben quedar Y antes de las Z
+    - state: q4
+      read: [Y, B]
+      write: [B, Y]
+      move: R
+      next: q4
+    - state: q4
+      read: [Z, B]
+      write: [B, Z]
+      move: R
+      next: q5
+
+    # q5: solo deben quedar Z hasta el final
+    - state: q5
+      read: [Z, B]
+      write: [B, Z]
+      move: R
+      next: q5
+    - state: q5
+      read: [B, B]
+      write: [B, B]
+      move: L
+      next: qf
+  inputs:
+    - "aabbcc"      # aceptada
+    - "aaabbbccc"   # aceptada
+    - "aabbbcc"     # rechazada: sobra una b
+    - "abcabc"      # rechazada: el orden no es a^n b^n c^n
