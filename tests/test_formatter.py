@@ -73,6 +73,14 @@ def test_format_report_without_inputs():
     assert "no contiene cadenas" in format_report(machine, [])
 
 
+def test_format_report_quiet_hides_ids_but_keeps_header_and_summary():
+    results = [simulate(MACHINE, "aa"), simulate(MACHINE, "b")]
+    text = format_report(MACHINE, results, quiet=True)
+    assert "Transiciones (2):" in text
+    assert "Descripciones instantáneas" not in text
+    assert "RESUMEN" in text
+
+
 def _mt():
     return {
         "states": ["q0"],

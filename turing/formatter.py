@@ -97,10 +97,11 @@ def format_summary(results):
     return "\n".join(lines)
 
 
-def format_report(machine, results, source=""):
+def format_report(machine, results, source="", quiet=False):
     parts = [format_machine(machine, source)]
     total = len(results)
-    parts += [format_result(r, i, total) for i, r in enumerate(results, 1)]
+    if not quiet:
+        parts += [format_result(r, i, total) for i, r in enumerate(results, 1)]
     if results:
         parts.append(format_summary(results))
     else:

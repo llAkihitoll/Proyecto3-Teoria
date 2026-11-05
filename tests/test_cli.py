@@ -57,3 +57,30 @@ def test_max_steps_option(tmp_path, capsys):
 def test_negative_max_steps_is_rejected(capsys):
     with pytest.raises(SystemExit):
         main([str(MACHINES / "ejemplo_pdf.yaml"), "--max-steps", "-1"])
+
+
+def test_quiet_mode_hides_ids_but_keeps_summary(capsys):
+    assert main([str(MACHINES / "ejemplo_pdf.yaml"), "--quiet"]) == 0
+    out = capsys.readouterr().out
+    assert "Descripciones instantáneas" not in out
+    assert "RESUMEN" in out
+
+
+def test_extra_input_is_simulated_without_touching_the_yaml_file(capsys):
+    assert main([str(MACHINES / "ejemplo_pdf.yaml"), "--input", "aaabbb"]) == 0
+    out = capsys.readouterr().out
+    assert 'Entrada 4/4: "aaabbb"' in out
+
+
+def test_extra_input_can_be_repeated(capsys):
+    assert main([str(MACHINES / "ejemplo_pdf.yaml"), "--input", "a", "--input", "b"]) == 0
+    out = capsys.readouterr().out
+    assert 'Entrada 4/5: "a"' in out
+    assert 'Entrada 5/5: "b"' in out
+
+
+def test_output_option_saves_the_same_report_to_a_file(tmp_path, capsys):
+    out_file = tmp_path / "salida.txt"
+    assert main([str(MACHINES / "ejemplo_pdf.yaml"), "--output", str(out_file)]) == 0
+    printed = capsys.readouterr().out
+    assert out_file.read_text(encoding="utf-8").strip() == printed.strip()

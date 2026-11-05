@@ -26,6 +26,23 @@ def main(argv=None):
         default=DEFAULT_MAX_STEPS,
         help=f"límite de pasos por cadena (por defecto {DEFAULT_MAX_STEPS})",
     )
+    parser.add_argument(
+        "--input",
+        dest="extra_inputs",
+        action="append",
+        metavar="cadena",
+        help="simula una cadena adicional sin modificar el YAML (se puede repetir)",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="solo muestra la tabla resumen, sin las descripciones instantáneas de cada cadena",
+    )
+    parser.add_argument(
+        "--output",
+        metavar="archivo",
+        help="además de mostrarla en pantalla, guarda la salida en este archivo",
+    )
     args = parser.parse_args(argv)
     if args.max_steps < 0:
         parser.error("--max-steps no puede ser negativo")
@@ -36,8 +53,15 @@ def main(argv=None):
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
+    if args.extra_inputs:
+        machine.inputs = list(machine.inputs) + args.extra_inputs
+
     results = simulate_all(machine, args.max_steps)
-    print(format_report(machine, results, args.config))
+    report = format_report(machine, results, args.config, quiet=args.quiet)
+    print(report)
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(report + "\n")
     return 0
 
 
