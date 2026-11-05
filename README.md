@@ -34,7 +34,7 @@ pip install -r requirements.txt
 ## Ejecución
 
 ```bash
-python main.py <archivo.yaml> [--max-steps N] [--input cadena] [--quiet] [--output archivo.txt]
+python main.py <archivo.yaml> [--max-steps N] [--input cadena] [--quiet] [--output archivo.txt] [--step]
 ```
 
 | Argumento | Descripción |
@@ -44,6 +44,7 @@ python main.py <archivo.yaml> [--max-steps N] [--input cadena] [--quiet] [--outp
 | `--input cadena` | Simula una cadena adicional sin modificar `inputs` en el YAML (se puede repetir) |
 | `--quiet` | Solo muestra la tabla resumen final, sin las descripciones instantáneas de cada cadena |
 | `--output archivo.txt` | Además de mostrarla en pantalla, guarda la salida en `archivo.txt` (sin necesidad de redirigir con `>`) |
+| `--step` | Modo paso a paso: muestra una ID a la vez y espera Enter para mostrar la siguiente (no se puede combinar con `--quiet`) |
 
 Máquinas incluidas:
 

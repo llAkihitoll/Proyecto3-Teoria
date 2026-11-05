@@ -84,3 +84,50 @@ def test_output_option_saves_the_same_report_to_a_file(tmp_path, capsys):
     assert main([str(MACHINES / "ejemplo_pdf.yaml"), "--output", str(out_file)]) == 0
     printed = capsys.readouterr().out
     assert out_file.read_text(encoding="utf-8").strip() == printed.strip()
+
+
+def test_step_mode_waits_for_enter_between_ids(monkeypatch, capsys):
+    presses = []
+
+    def fake_input(prompt=""):
+        presses.append(prompt)
+        return ""
+
+    monkeypatch.setattr("builtins.input", fake_input)
+    assert main([str(MACHINES / "ejemplo_pdf.yaml"), "--step"]) == 0
+    out = capsys.readouterr().out
+    assert "Descripciones instantáneas" in out
+    assert "RESUMEN" in out
+    # cada entrada válida (q0 -> q1) genera 2 IDs: la inicial y la de después de leer
+    assert len(presses) == 2 * 3
+
+
+def test_step_mode_does_not_pause_for_invalid_input(tmp_path, monkeypatch, capsys):
+    config_path = tmp_path / "invalida.yaml"
+    config_path.write_text(
+        """
+mt:
+  states: [q0, qf]
+  input_alphabet: [a]
+  tape_alphabet: [a, B]
+  initial_state: q0
+  accept_states: [qf]
+  transitions: []
+  inputs:
+    - "z"
+""",
+        encoding="utf-8",
+    )
+
+    def fail_if_called(prompt=""):
+        raise AssertionError("no debería pausar en una entrada inválida")
+
+    monkeypatch.setattr("builtins.input", fail_if_called)
+    assert main([str(config_path), "--step"]) == 0
+    out = capsys.readouterr().out
+    assert "ENTRADA INVÁLIDA" in out
+
+
+def test_step_and_quiet_cannot_be_combined():
+    with pytest.raises(SystemExit):
+        main([str(MACHINES / "ejemplo_pdf.yaml"), "--step", "--quiet"])

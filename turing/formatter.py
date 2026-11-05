@@ -39,27 +39,32 @@ def format_tape(description):
     return cells, " " * offset + "^"
 
 
-def format_result(result, index=1, total=1):
+def format_result_header(result, index=1, total=1):
+    """Título de la entrada y, si la cadena es inválida, también el resultado."""
     lines = [
         "",
         _rule("-"),
         f"Entrada {index}/{total}: {_quoted(result.input_word)}",
         _rule("-"),
     ]
-
     if result.outcome is Outcome.INVALID_INPUT:
         lines += [f"Resultado: {result.outcome.value}", f"Motivo:    {result.message}"]
-        return "\n".join(lines)
+    else:
+        lines.append("Descripciones instantáneas:")
+    return "\n".join(lines)
 
-    lines.append("Descripciones instantáneas:")
-    width = len(str(result.ids[-1].step))
-    for i, desc in enumerate(result.ids):
-        prefix = "  " if i == 0 else "⊢ "
-        lines.append(f"  {prefix}{desc.step:>{width}}:  {desc}")
 
+def format_id_line(desc, index, width):
+    """Una línea de la ID `desc`; `index` es su posición dentro de la lista de IDs."""
+    prefix = "  " if index == 0 else "⊢ "
+    return f"  {prefix}{desc.step:>{width}}:  {desc}"
+
+
+def format_result_footer(result):
+    """Configuración final de la cinta y el resultado de la simulación."""
     final = result.ids[-1]
     cells, marker = format_tape(final)
-    lines += [
+    lines = [
         "",
         "Configuración final:",
         f"  ID:          {final}",
@@ -73,6 +78,16 @@ def format_result(result, index=1, total=1):
         f"Motivo:    {result.message}",
     ]
     return "\n".join(lines)
+
+
+def format_result(result, index=1, total=1):
+    if result.outcome is Outcome.INVALID_INPUT:
+        return format_result_header(result, index, total)
+    width = len(str(result.ids[-1].step))
+    parts = [format_result_header(result, index, total)]
+    parts += [format_id_line(desc, i, width) for i, desc in enumerate(result.ids)]
+    parts.append(format_result_footer(result))
+    return "\n".join(parts)
 
 
 def format_summary(results):

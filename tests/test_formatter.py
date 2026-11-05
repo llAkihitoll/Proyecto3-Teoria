@@ -1,5 +1,14 @@
 from turing import InstantaneousDescription, Outcome, SimulationResult, parse_machine, simulate
-from turing.formatter import format_machine, format_report, format_result, format_summary, format_tape
+from turing.formatter import (
+    format_id_line,
+    format_machine,
+    format_report,
+    format_result,
+    format_result_footer,
+    format_result_header,
+    format_summary,
+    format_tape,
+)
 
 MACHINE = parse_machine({
     "mt": {
@@ -71,6 +80,15 @@ def test_format_summary_has_one_row_per_input():
 def test_format_report_without_inputs():
     machine = parse_machine({"mt": {**_mt(), "inputs": []}})
     assert "no contiene cadenas" in format_report(machine, [])
+
+
+def test_result_pieces_combine_into_the_same_text_as_format_result():
+    result = simulate(MACHINE, "aa")
+    width = len(str(result.ids[-1].step))
+    pieces = [format_result_header(result, 1, 2)]
+    pieces += [format_id_line(desc, i, width) for i, desc in enumerate(result.ids)]
+    pieces.append(format_result_footer(result))
+    assert "\n".join(pieces) == format_result(result, 1, 2)
 
 
 def test_format_report_quiet_hides_ids_but_keeps_header_and_summary():
