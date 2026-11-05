@@ -8,6 +8,7 @@ from turing.formatter import (
     format_result_header,
     format_summary,
     format_tape,
+    format_warnings,
 )
 
 MACHINE = parse_machine({
@@ -97,6 +98,28 @@ def test_format_report_quiet_hides_ids_but_keeps_header_and_summary():
     assert "Transiciones (2):" in text
     assert "Descripciones instantáneas" not in text
     assert "RESUMEN" in text
+
+
+def test_format_warnings_is_empty_without_warnings():
+    assert format_warnings([]) == ""
+
+
+def test_format_warnings_lists_each_warning():
+    text = format_warnings(["el estado 'q9' es inalcanzable", "el símbolo 'Z' nunca se usa"])
+    assert "ADVERTENCIAS" in text
+    assert "  - el estado 'q9' es inalcanzable" in text
+    assert "  - el símbolo 'Z' nunca se usa" in text
+
+
+def test_format_report_includes_warnings_block_when_given():
+    text = format_report(MACHINE, [simulate(MACHINE, "aa")], warnings=["advertencia de prueba"])
+    assert "ADVERTENCIAS" in text
+    assert "advertencia de prueba" in text
+
+
+def test_format_report_omits_warnings_block_when_empty():
+    text = format_report(MACHINE, [simulate(MACHINE, "aa")], warnings=[])
+    assert "ADVERTENCIAS" not in text
 
 
 def _mt():

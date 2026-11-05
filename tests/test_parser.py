@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from turing import ConfigError, load_machine, parse_machine
+from turing import ConfigError, collect_warnings, load_machine, parse_machine
 
 MACHINES = Path(__file__).resolve().parent.parent / "machines"
 
@@ -168,6 +168,43 @@ def test_all_errors_are_reported_together():
     with pytest.raises(ConfigError) as exc:
         parse_machine(data)
     assert len(exc.value.errors) == 2
+
+
+# --- advertencias (no detienen la carga del YAML) ---
+
+def test_no_warnings_for_a_well_formed_machine():
+    data = config(
+        states=["q0", "qf"],
+        tape_alphabet=["a", "b", "B"],
+        transitions=[
+            {"state": "q0", "read": ["a", "B"], "write": ["B", "b"], "move": "R", "next": "qf"},
+        ],
+    )
+    assert collect_warnings(parse_machine(data)) == []
+
+
+def test_warns_about_unreachable_states():
+    # En el ejemplo del PDF solo hay transiciones q0 -> q1; q2 y qf son inalcanzables.
+    m = load_machine(MACHINES / "ejemplo_pdf.yaml")
+    warnings = collect_warnings(m)
+    assert any("'q2' es inalcanzable" in w for w in warnings)
+    assert any("'qf' es inalcanzable" in w for w in warnings)
+    assert not any("'q0' es inalcanzable" in w or "'q1' es inalcanzable" in w for w in warnings)
+
+
+def test_warns_about_transitions_leaving_an_accept_state():
+    data = config()
+    dead = dict(data["mt"]["transitions"][1], state="qf")
+    data["mt"]["transitions"].append(dead)
+    warnings = collect_warnings(parse_machine(data))
+    assert any("nunca se ejecuta" in w and "'qf'" in w for w in warnings)
+
+
+def test_warns_about_unused_tape_alphabet_symbols():
+    data = config(tape_alphabet=["a", "b", "B", "X", "Z"])
+    warnings = collect_warnings(parse_machine(data))
+    assert any("'Z'" in w and "nunca se usa" in w for w in warnings)
+    assert not any("'X'" in w for w in warnings)
 
 
 def test_file_not_found_and_invalid_yaml(tmp_path):

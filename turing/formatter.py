@@ -39,6 +39,15 @@ def format_tape(description):
     return cells, " " * offset + "^"
 
 
+def format_warnings(warnings):
+    """Bloque de advertencias sobre el YAML; cadena vacía si no hay ninguna."""
+    if not warnings:
+        return ""
+    lines = ["", _rule("-"), "ADVERTENCIAS", _rule("-")]
+    lines += [f"  - {w}" for w in warnings]
+    return "\n".join(lines)
+
+
 def format_result_header(result, index=1, total=1):
     """Título de la entrada y, si la cadena es inválida, también el resultado."""
     lines = [
@@ -112,8 +121,11 @@ def format_summary(results):
     return "\n".join(lines)
 
 
-def format_report(machine, results, source="", quiet=False):
+def format_report(machine, results, source="", quiet=False, warnings=None):
     parts = [format_machine(machine, source)]
+    warning_block = format_warnings(warnings or [])
+    if warning_block:
+        parts.append(warning_block)
     total = len(results)
     if not quiet:
         parts += [format_result(r, i, total) for i, r in enumerate(results, 1)]

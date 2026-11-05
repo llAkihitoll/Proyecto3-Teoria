@@ -8,7 +8,8 @@ Uso:
 import argparse
 import sys
 
-from turing import DEFAULT_MAX_STEPS, ConfigError, Outcome, load_machine, simulate_all
+from turing import DEFAULT_MAX_STEPS, ConfigError, Outcome, collect_warnings, load_machine, simulate_all
+from turing.dot import to_dot
 from turing.formatter import (
     format_id_line,
     format_machine,
@@ -16,12 +17,16 @@ from turing.formatter import (
     format_result_footer,
     format_result_header,
     format_summary,
+    format_warnings,
 )
 
 
-def _run_step_by_step(machine, results, source):
+def _run_step_by_step(machine, results, source, warnings):
     """Muestra la máquina y, para cada cadena, una ID a la vez esperando Enter."""
     print(format_machine(machine, source))
+    warning_block = format_warnings(warnings)
+    if warning_block:
+        print(warning_block)
     total = len(results)
     for index, result in enumerate(results, 1):
         print(format_result_header(result, index, total))
@@ -73,6 +78,11 @@ def main(argv=None):
         action="store_true",
         help="modo paso a paso: muestra una ID a la vez y espera Enter para avanzar a la siguiente",
     )
+    parser.add_argument(
+        "--dot",
+        metavar="archivo.dot",
+        help="genera un archivo Graphviz (.dot) con el diagrama de estados de la máquina",
+    )
     args = parser.parse_args(argv)
     if args.max_steps < 0:
         parser.error("--max-steps no puede ser negativo")
@@ -85,13 +95,20 @@ def main(argv=None):
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
+    if args.dot:
+        with open(args.dot, "w", encoding="utf-8") as f:
+            f.write(to_dot(machine) + "\n")
+        print(f"Diagrama Graphviz guardado en '{args.dot}'")
+
+    warnings = collect_warnings(machine)
+
     if args.extra_inputs:
         machine.inputs = list(machine.inputs) + args.extra_inputs
 
     results = simulate_all(machine, args.max_steps)
-    report = format_report(machine, results, args.config, quiet=args.quiet)
+    report = format_report(machine, results, args.config, quiet=args.quiet, warnings=warnings)
     if args.step:
-        _run_step_by_step(machine, results, args.config)
+        _run_step_by_step(machine, results, args.config, warnings)
     else:
         print(report)
     if args.output:

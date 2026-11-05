@@ -131,3 +131,20 @@ mt:
 def test_step_and_quiet_cannot_be_combined():
     with pytest.raises(SystemExit):
         main([str(MACHINES / "ejemplo_pdf.yaml"), "--step", "--quiet"])
+
+
+def test_warnings_are_shown_for_the_pdf_example(capsys):
+    assert main([str(MACHINES / "ejemplo_pdf.yaml")]) == 0
+    out = capsys.readouterr().out
+    assert "ADVERTENCIAS" in out
+    assert "'q2' es inalcanzable" in out
+
+
+def test_dot_option_writes_a_graphviz_file(tmp_path, capsys):
+    dot_file = tmp_path / "diagrama.dot"
+    assert main([str(MACHINES / "ejemplo_pdf.yaml"), "--dot", str(dot_file)]) == 0
+    text = dot_file.read_text(encoding="utf-8")
+    assert text.startswith("digraph MT {")
+    out = capsys.readouterr().out
+    assert f"Diagrama Graphviz guardado en '{dot_file}'" in out
+    assert "RESUMEN" in out

@@ -190,6 +190,58 @@ def _symbol_pair(value, where, errors):
     return None if None in pair else pair
 
 
+def collect_warnings(machine):
+    """Advertencias no fatales sobre la máquina (no impiden la simulación)."""
+    warnings = []
+    warnings += _unreachable_state_warnings(machine)
+    warnings += _dead_transition_warnings(machine)
+    warnings += _unused_symbol_warnings(machine)
+    return warnings
+
+
+def _reachable_states(machine):
+    reachable = {machine.initial_state}
+    pending = [machine.initial_state]
+    while pending:
+        state = pending.pop()
+        for t in machine.transitions.values():
+            if t.state == state and t.next_state not in reachable:
+                reachable.add(t.next_state)
+                pending.append(t.next_state)
+    return reachable
+
+
+def _unreachable_state_warnings(machine):
+    reachable = _reachable_states(machine)
+    return [
+        f"El estado '{q}' es inalcanzable desde el estado inicial '{machine.initial_state}'"
+        for q in machine.states
+        if q not in reachable
+    ]
+
+
+def _dead_transition_warnings(machine):
+    # La máquina se detiene en cuanto entra en un estado de aceptación, así que
+    # ninguna transición que parta de uno de esos estados llega a ejecutarse.
+    return [
+        f"La transición {t} nunca se ejecuta: '{t.state}' es un estado de aceptación "
+        "y la máquina se detiene al entrar en él"
+        for t in machine.transitions.values()
+        if t.state in machine.accept_states
+    ]
+
+
+def _unused_symbol_warnings(machine):
+    used = {machine.blank}
+    for t in machine.transitions.values():
+        used.update((t.read_symbol, t.read_cache, t.write_symbol, t.write_cache))
+    return [
+        f"El símbolo '{s}' de tape_alphabet nunca se usa en las transiciones"
+        for s in machine.tape_alphabet
+        if s not in used
+    ]
+
+
 def _parse_inputs(raw, errors):
     if raw is None:
         return []

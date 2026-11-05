@@ -34,7 +34,7 @@ pip install -r requirements.txt
 ## Ejecución
 
 ```bash
-python main.py <archivo.yaml> [--max-steps N] [--input cadena] [--quiet] [--output archivo.txt] [--step]
+python main.py <archivo.yaml> [--max-steps N] [--input cadena] [--quiet] [--output archivo.txt] [--step] [--dot archivo.dot]
 ```
 
 | Argumento | Descripción |
@@ -45,6 +45,7 @@ python main.py <archivo.yaml> [--max-steps N] [--input cadena] [--quiet] [--outp
 | `--quiet` | Solo muestra la tabla resumen final, sin las descripciones instantáneas de cada cadena |
 | `--output archivo.txt` | Además de mostrarla en pantalla, guarda la salida en `archivo.txt` (sin necesidad de redirigir con `>`) |
 | `--step` | Modo paso a paso: muestra una ID a la vez y espera Enter para mostrar la siguiente (no se puede combinar con `--quiet`) |
+| `--dot archivo.dot` | Genera un archivo Graphviz con el diagrama de estados de la máquina (ver [Diagrama de estados](#diagrama-de-estados-dot)) |
 
 Máquinas incluidas:
 
@@ -126,6 +127,14 @@ El parser reporta **todos** los errores encontrados, por ejemplo:
 
 Una cadena de `inputs` con símbolos fuera de Σ no detiene el programa: se reporta como **ENTRADA INVÁLIDA**.
 
+### Advertencias
+
+Además de los errores que impiden cargar el YAML, el programa revisa la máquina ya cargada y muestra **advertencias** (no detienen la ejecución):
+
+- Estados inalcanzables desde `initial_state` (por ejemplo, en `machines/ejemplo_pdf.yaml` los estados `q2` y `qf` nunca se usan, porque el ejemplo del enunciado solo define dos transiciones).
+- Transiciones que parten de un estado de aceptación: nunca se ejecutan, porque la máquina se detiene en cuanto entra a ese estado.
+- Símbolos de `tape_alphabet` que ninguna transición lee ni escribe.
+
 ## Salida
 
 Para cada cadena se muestra:
@@ -167,6 +176,15 @@ Cada ID sigue la notación `X1 … Xi-1 [q, c] Xi … Xn`: el par `[q, c]` apare
 | DETENIDA POR LÍMITE DE PASOS | Se alcanzó `--max-steps` sin que la máquina se detuviera (no se clasifica como aceptada ni rechazada) |
 | ENTRADA INVÁLIDA | La cadena contiene símbolos fuera de Σ |
 
+### Diagrama de estados (`--dot`)
+
+```bash
+python main.py machines/reconocedora.yaml --dot reconocedora.dot
+dot -Tpng reconocedora.dot -o reconocedora.png   # requiere Graphviz instalado
+```
+
+Genera un archivo `.dot` con un nodo por estado (doble círculo para los de `accept_states`) y una arista por transición, etiquetada como `símbolo_leído,caché / símbolo_escrito,nueva_caché ; movimiento`. El programa sigue mostrando la simulación normalmente después de escribir el archivo.
+
 ## Arquitectura
 
 ```
@@ -177,7 +195,8 @@ Proyecto3/
 │   ├── parser.py            # Lectura y validación del YAML
 │   ├── tape.py              # Cinta infinita y cabezal
 │   ├── simulator.py         # Motor de simulación
-│   └── formatter.py         # Presentación de resultados
+│   ├── formatter.py         # Presentación de resultados
+│   └── dot.py               # Exportación del diagrama de estados a Graphviz
 ├── machines/                # Máquinas en YAML
 │   ├── reconocedora.yaml
 │   ├── alteradora.yaml
@@ -332,11 +351,12 @@ python -m pytest
 
 | Archivo | Tipo | Qué verifica |
 |---|---|---|
-| `tests/test_parser.py` | Unitaria | Lectura del YAML, interpretación de transiciones y detección de configuraciones inválidas |
+| `tests/test_parser.py` | Unitaria | Lectura del YAML, interpretación de transiciones, detección de configuraciones inválidas y advertencias (estados inalcanzables, transiciones muertas, símbolos sin usar) |
 | `tests/test_tape.py` | Unitaria | Inicialización, escritura y movimientos L/R/S de la cinta, incluso fuera de la entrada |
 | `tests/test_simulator.py` | Unitaria | Aceptación, rechazo, transiciones inexistentes, uso de la caché, registro de IDs y límite de pasos |
-| `tests/test_formatter.py` | Unitaria | Formato de la descripción formal, IDs, configuración final y resumen |
-| `tests/test_cli.py` | Integración | Ejecución completa desde la línea de comandos, errores y `--max-steps` |
+| `tests/test_formatter.py` | Unitaria | Formato de la descripción formal, IDs, configuración final, resumen y advertencias |
+| `tests/test_dot.py` | Unitaria | Exportación del diagrama de estados a Graphviz (`--dot`) |
+| `tests/test_cli.py` | Integración | Ejecución completa desde la línea de comandos: errores, `--max-steps`, `--input`, `--quiet`, `--output`, `--step` y `--dot` |
 | `tests/test_machines.py` | Integración | Máquinas de demostración: la reconocedora se compara contra la definición del lenguaje en todas las cadenas sobre {a, b, c} de longitud ≤ 7, y la alteradora produce ww para todas las cadenas sobre {a, b} de longitud ≤ 7 |
 
 ## Video de demostración
