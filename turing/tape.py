@@ -1,4 +1,3 @@
-"""Cinta infinita en ambos sentidos con un único cabezal."""
 
 from .models import BLANK, MOVES
 

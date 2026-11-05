@@ -1,5 +1,3 @@
-"""Exportación del diagrama de estados de la máquina a formato Graphviz (DOT)."""
-
 
 def _escape(text):
     return text.replace("\\", "\\\\").replace('"', '\\"')

@@ -1,9 +1,3 @@
-"""Estructuras de datos que representan una Máquina de Turing de una cinta.
-
-El modelo sigue la notación del enunciado: cada estado efectivo es un par
-[q, caché], donde la caché es un símbolo de la cinta guardado en el control
-finito (técnica de "almacenamiento en el estado" de Hopcroft).
-"""
 
 from dataclasses import dataclass, field
 from enum import Enum

@@ -1,4 +1,3 @@
-"""Motor de simulación de la Máquina de Turing de una cinta."""
 
 from .models import InstantaneousDescription, Outcome, SimulationResult
 from .tape import Tape

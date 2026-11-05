@@ -1,4 +1,3 @@
-"""Lectura y validación del archivo YAML que describe la Máquina de Turing."""
 
 import yaml
 
@@ -17,8 +16,6 @@ TRANSITION_FIELDS = ("state", "read", "write", "move", "next")
 
 
 class ConfigError(Exception):
-    """Configuración inválida. Agrupa todos los problemas encontrados."""
-
     def __init__(self, errors):
         self.errors = list(errors) if isinstance(errors, (list, tuple)) else [errors]
         super().__init__(
@@ -38,7 +35,6 @@ def load_machine(path):
 
 
 def _symbol(value, where, errors):
-    """Convierte un escalar YAML a símbolo (str), detectando conversiones peligrosas."""
     if isinstance(value, bool):
         # yes/no/true/false/on/off se convierten en booleanos en YAML
         errors.append(f"{where}: el valor '{value}' se interpretó como booleano; escríbalo entre comillas")

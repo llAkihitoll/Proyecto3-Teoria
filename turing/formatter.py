@@ -1,4 +1,3 @@
-"""Presentación en texto de la máquina, las IDs y los resultados."""
 
 from .models import Outcome
 
