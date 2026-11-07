@@ -82,6 +82,13 @@ def test_left_move_has_one_domino_per_tape_symbol():
         assert dom(f"{c} {p1} #", f"{p2} {c} B #") in instance.dominoes
 
 
+def test_left_move_can_grow_the_tape_to_the_left():
+    instance = build_pcp(GOES_LEFT, "a")
+    p1, p2 = "[q1,B]", "[q2,B]"
+    assert dom(f"{p1} B", f"{p2} B B") in instance.dominoes
+    assert dom(f"{p1} #", f"{p2} B B #") in instance.dominoes
+
+
 def test_accepting_state_gets_erasing_and_closing_dominoes():
     instance = build_pcp(RIGHT_THEN_STAY, "a")
     for x in ("a", "B"):
