@@ -1,5 +1,8 @@
 
+import textwrap
+
 from .models import Outcome
+from .pcp import build_pcp, solution_indices
 
 WIDTH = 70
 
@@ -132,4 +135,75 @@ def format_report(machine, results, source="", quiet=False, warnings=None):
         parts.append(format_summary(results))
     else:
         parts.append("\nEl archivo no contiene cadenas en 'inputs'.")
+    return "\n".join(parts)
+
+
+def _wrapped(text, indent="  "):
+    return textwrap.fill(text, width=WIDTH, initial_indent=indent, subsequent_indent=indent)
+
+
+def format_pcp_entry(machine, result, index=1, total=1, max_steps=None, quiet=False):
+    """Instancia PCP de una cadena, su secuencia solución y la verificación."""
+    lines = [
+        "",
+        _rule("-"),
+        f"PCP {index}/{total}: {_quoted(result.input_word)}",
+        _rule("-"),
+    ]
+    if result.outcome is Outcome.INVALID_INPUT:
+        lines.append(f"Sin instancia PCP: {result.message}")
+        return "\n".join(lines)
+
+    try:
+        instance = build_pcp(machine, result.input_word)
+    except ValueError as e:
+        lines.append(f"No se pudo construir la instancia PCP: {e}")
+        return "\n".join(lines)
+
+    lines.append(f"Variante: MPCP (toda solución debe comenzar con c{instance.start_index})")
+    if not quiet:
+        lines.append(f"Dominós ({len(instance)}):")
+        width = len(str(len(instance)))
+        lines += [f"  c{i:<{width}} = {d}" for i, d in enumerate(instance.dominoes, 1)]
+    else:
+        lines.append(f"Dominós: {len(instance)}")
+
+    kwargs = {} if max_steps is None else {"max_steps": max_steps}
+    indices = solution_indices(machine, result.input_word, instance, **kwargs)
+    if indices is None:
+        lines += [
+            "",
+            f"Sin secuencia solución: la MT no acepta la cadena ({result.outcome.value}).",
+        ]
+        return "\n".join(lines)
+
+    check = instance.check(indices)
+    verdict = "SÍ" if instance.is_solution(indices) else "NO"
+    lines += ["", f"Secuencia solución ({len(indices)} dominós):", _wrapped(", ".join(map(str, indices)))]
+    if not quiet:
+        lines += [
+            "",
+            "Superior (concatenación):",
+            _wrapped(" ".join(check.top)),
+            "Inferior (concatenación):",
+            _wrapped(" ".join(check.bottom)),
+        ]
+    lines += ["", f"¿Superior = inferior? {verdict}"]
+    return "\n".join(lines)
+
+
+def format_pcp_report(machine, results, max_steps=None, quiet=False):
+    total = len(results)
+    header = [
+        "",
+        _rule(),
+        "REDUCCIÓN MT → PCP",
+        _rule(),
+        "Cada configuración se escribe separada por # y el control finito es el par [q,caché].",
+    ]
+    parts = ["\n".join(header)]
+    parts += [
+        format_pcp_entry(machine, r, i, total, max_steps, quiet)
+        for i, r in enumerate(results, 1)
+    ]
     return "\n".join(parts)
