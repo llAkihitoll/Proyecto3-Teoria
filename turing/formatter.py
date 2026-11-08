@@ -12,14 +12,10 @@ def _quoted(word):
     return f'"{word}"' if word else '"" (cadena vacía)'
 
 
-def format_machine(machine, source=""):
+def format_machine(machine, source="", with_title=True):
     title = "MÁQUINA DE TURING" + (f"  —  {source}" if source else "")
     accept = [q for q in machine.states if q in machine.accept_states]
-    lines = [
-        _rule(),
-        title,
-        _rule(),
-    ]
+    lines = [_rule(), title, _rule()] if with_title else []
     if not machine.uses_cache:
         lines.append(f"Reglas:                    {machine.mode} (sin caché: δ(q, x) = (p, y, D))")
     lines += [

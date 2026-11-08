@@ -70,7 +70,7 @@ Si el YAML tiene errores, el programa los lista todos y termina con código de s
 python interfaz.py [archivo.yaml]
 ```
 
-Tres segmentos: **Entrada** (lista para cambiar rápido entre las cadenas, campo para agregar una nueva y descripción de la máquina), **Pasos** (descripciones instantáneas de la cadena seleccionada) y **Resultados** (configuración final y tabla resumen). El botón "Cargar máquina" solo acepta archivos `.yaml`.
+Cuatro bloques: **Cadenas de entrada** (lista para cambiar rápido entre las cadenas, coloreadas según su resultado, y un campo para simular una nueva), **Máquina** (descripción y advertencias), **Pasos** (descripciones instantáneas de la cadena seleccionada) y **Resultado** (configuración final de la cadena seleccionada). El botón "Agregar archivo" solo acepta archivos `.yaml`. Las fotografías de Gödel y Turing se leen de la carpeta `assets/` (requiere Pillow; sin ella la interfaz funciona sin fotos).
 
 ## Formato del archivo YAML
 
