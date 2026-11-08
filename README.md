@@ -373,7 +373,7 @@ Máquina con `modo: godel` que codifica expresiones de Peano como un número bin
 Por ejemplo, `S(0)+S(0)` produce `1001000110001010001010010001100010100`. Los operadores `*`, `-`, `/` y `^` solo se codifican, nunca se evalúan. Se desarrolla en tres fases:
 
 1. **Validación** (implementada): acepta solo la gramática `N := 0 | S(N)`, `Suma := N (Op N)*` con `Op ∈ {+, -, *, /, ^}`, `Expr := Suma | Suma = Suma`, y rechaza paréntesis incorrectos, operadores mal colocados, más de un `=` y símbolos desconocidos. Escribe `#1` a la derecha de la expresión, deja el cabezal al inicio y acepta en `qV`.
-2. **Codificación**: marca cada símbolo con `X`, escribe sus cuatro bits tras el separador `#` y regresa por el siguiente.
+2. **Codificación** (implementada): `e0` marca con `X` el primer símbolo sin procesar y pasa a un estado de viaje propio de ese símbolo (la memoria está en el estado, no en una caché). El viaje avanza hasta el primer blanco, escribe el primer bit y los estados compartidos `w_xyz`, `u_yz` y `z_z` escriben los tres restantes, cada uno con una transición explícita. Luego `r1` y `r2` regresan hasta la última `X`. Al encontrar `#` acepta en `qf`; la cinta es `XXXXXXXXX#1001000110001010001010010001100010100` y el cabezal queda sobre `#`.
 3. **Limpieza**: borra la expresión y el `#`, y deja solo el resultado binario.
 
 | Estado | Función |
@@ -383,8 +383,12 @@ Por ejemplo, `S(0)+S(0)` produce `1001000110001010001010010001100010100`. Los op
 | qE1, qRet0 | Escribe el prefijo `1` tras `#` y regresa al inicio de la cinta |
 | b0, b1, b2, b3 | En cada término empareja cada `S` con un `)` marcándolos como `Y` y `Z` |
 | bF, bG | Verifican que no sobre ningún `)` y pasan al siguiente término |
-| rR | Restaura las marcas y deja el cabezal al inicio |
-| qV | Fin de la validación |
+| rR | Restaura las marcas y pasa a e0 con el cabezal al inicio |
+| e0 | Marca con X el primer símbolo sin procesar; si encuentra `#`, acepta en qf |
+| t_0, t_S, t_abre, t_cierra, t_mas, t_igual, t_por, t_menos, t_div, t_pot | Un estado de viaje por símbolo: avanza al primer blanco y escribe el primer bit de su código |
+| w_xyz, u_yz, z_z | Escriben los bits restantes (compartidos por todos los símbolos) |
+| r1, r2 | Regresan por los bits y por la expresión hasta la última X |
+| qf | Aceptación (fin de la fase 2) |
 
 ## Pruebas
 
@@ -402,7 +406,7 @@ python -m pytest
 | `tests/test_cli.py` | Integración | Ejecución completa desde la línea de comandos: errores, `--max-steps`, `--input`, `--quiet`, `--output`, `--step` y `--dot` |
 | `tests/test_machines.py` | Integración | Máquinas de demostración: la reconocedora se compara contra la definición del lenguaje en todas las cadenas sobre {a, b, c} de longitud ≤ 7, y la alteradora produce ww para todas las cadenas sobre {a, b} de longitud ≤ 7 |
 | `tests/test_godel_mode.py` | Unitaria | Etiqueta `modo`: transiciones sin caché, errores de configuración, símbolos desconocidos rechazados por la MT e IDs sin caché |
-| `tests/test_godel.py` | Integración | MT de Gödel, fase 1: la validación coincide con la gramática en todas las cadenas sobre {0, S, (, ), +, =} de longitud ≤ 6 y sobre los 10 símbolos de longitud ≤ 5, y deja `expresión#1` en la cinta |
+| `tests/test_godel.py` | Integración | MT de Gödel, fases 1 y 2: acepta exactamente la gramática (todas las cadenas sobre {0, S, (, ), +, =} de longitud ≤ 6 y sobre los 10 símbolos de longitud ≤ 5) y la cinta final coincide con `X…X#` + el binario de referencia |
 
 ## Video de demostración
 

@@ -13,7 +13,7 @@
 #
 # Cinta inicial:  expresión B B B ...   (la MT escribe sola el separador y el prefijo: expresión # 1)
 #
-# ---- FASE 1: VALIDACIÓN (esta versión acepta en qV al terminar la validación) ----
+# ---- FASE 1: VALIDACIÓN ----
 #
 #  Pasada A: revisa la adyacencia de símbolos de izquierda a derecha y, si todo es correcto,
 #            escribe "#1" a la derecha de la expresión.
@@ -31,14 +31,35 @@
 #    bF   término sin S sin marcar: no puede sobrar ningún ')' (si sobra, rechaza)
 #    bG   avanza hasta el siguiente término (o al separador #)
 #    rR   restaura las marcas (Y -> S, Z -> ')') y deja el cabezal al inicio
-#    qV   fin de la validación (aceptación en esta fase)
+#    rR   restaura las marcas (Y -> S, Z -> ')') y deja el cabezal al inicio; sigue en e0
+#
+# ---- FASE 2: CODIFICACIÓN (esta versión acepta en qf al terminar de codificar) ----
+#
+#  Código de 4 bits por símbolo:  0=0001  S=0010  (=0011  )=0100  +=0101  ==0110
+#                                 *=0111  -=1000  /=1001  ^=1010
+#  Cinta al empezar la fase:  expresión # 1     (el resultado se escribe después del 1)
+#
+#    e0       lee el primer símbolo sin procesar, lo marca con X y pasa a su estado de viaje;
+#             si encuentra '#', todos los símbolos ya están codificados y acepta en qf
+#    t_*      un estado de viaje por símbolo (t_0, t_S, t_abre, t_cierra, t_mas, t_igual,
+#             t_por, t_menos, t_div, t_pot): la memoria del símbolo está en el estado.
+#             Avanza hasta el primer blanco, escribe el primer bit de su código y sigue
+#    w_xyz    escribe el primer bit pendiente de los tres que faltan (compartido por símbolos)
+#    u_yz     escribe el siguiente bit de los dos que faltan
+#    z_z      escribe el último bit y regresa
+#    r1       retrocede por los bits escritos hasta el separador '#'
+#    r2       retrocede por la expresión hasta la última X y vuelve a e0
+#    qf       aceptación de esta fase
 modo: godel
 mt:
-  states: [v0, vS, vL, vE, w0, wS, wL, wE, qE1, qRet0, b0, b1, b2, b3, bF, bG, rR, qV]
+  states: [v0, vS, vL, vE, w0, wS, wL, wE, qE1, qRet0, b0, b1, b2, b3, bF, bG, rR,
+           e0, t_0, t_S, t_abre, t_cierra, t_mas, t_igual, t_por, t_menos, t_div, t_pot,
+           w_000, w_001, w_010, w_011, w_100, w_101, w_110, w_111,
+           u_00, u_01, u_10, u_11, z_0, z_1, r1, r2, qf]
   input_alphabet: ["0", S, "(", ")", "+", "=", "*", "-", "/", "^"]
-  tape_alphabet: ["0", "1", S, "(", ")", "+", "=", "*", "-", "/", "^", "#", Y, Z, B]
+  tape_alphabet: ["0", "1", S, "(", ")", "+", "=", "*", "-", "/", "^", "#", X, Y, Z, B]
   initial_state: v0
-  accept_states: [qV]
+  accept_states: [qf]
   transitions:
     # ---------- Pasada A: adyacencia (antes del '=') ----------
     - {state: v0, read: S, write: S, move: R, next: vS}
@@ -161,7 +182,206 @@ mt:
     - {state: rR, read: "/", write: "/", move: L, next: rR}
     - {state: rR, read: "^", write: "^", move: L, next: rR}
     - {state: rR, read: "=", write: "=", move: L, next: rR}
-    - {state: rR, read: B, write: B, move: R, next: qV}
+    - {state: rR, read: B, write: B, move: R, next: e0}
+
+    # ---------- FASE 2: e0 marca con X el primer símbolo sin procesar y pasa a su estado de viaje ----------
+    - {state: e0, read: "0", write: X, move: R, next: t_0}
+    - {state: e0, read: S, write: X, move: R, next: t_S}
+    - {state: e0, read: "(", write: X, move: R, next: t_abre}
+    - {state: e0, read: ")", write: X, move: R, next: t_cierra}
+    - {state: e0, read: "+", write: X, move: R, next: t_mas}
+    - {state: e0, read: "=", write: X, move: R, next: t_igual}
+    - {state: e0, read: "*", write: X, move: R, next: t_por}
+    - {state: e0, read: "-", write: X, move: R, next: t_menos}
+    - {state: e0, read: "/", write: X, move: R, next: t_div}
+    - {state: e0, read: "^", write: X, move: R, next: t_pot}
+    - {state: e0, read: "#", write: "#", move: S, next: qf}
+
+    # 0 = 0001: viaja hasta el primer blanco y escribe el primer bit (0); faltan 001
+    - {state: t_0, read: "0", write: "0", move: R, next: t_0}
+    - {state: t_0, read: S, write: S, move: R, next: t_0}
+    - {state: t_0, read: "(", write: "(", move: R, next: t_0}
+    - {state: t_0, read: ")", write: ")", move: R, next: t_0}
+    - {state: t_0, read: "+", write: "+", move: R, next: t_0}
+    - {state: t_0, read: "=", write: "=", move: R, next: t_0}
+    - {state: t_0, read: "*", write: "*", move: R, next: t_0}
+    - {state: t_0, read: "-", write: "-", move: R, next: t_0}
+    - {state: t_0, read: "/", write: "/", move: R, next: t_0}
+    - {state: t_0, read: "^", write: "^", move: R, next: t_0}
+    - {state: t_0, read: "#", write: "#", move: R, next: t_0}
+    - {state: t_0, read: "1", write: "1", move: R, next: t_0}
+    - {state: t_0, read: B, write: "0", move: R, next: w_001}
+
+    # S = 0010
+    - {state: t_S, read: "0", write: "0", move: R, next: t_S}
+    - {state: t_S, read: S, write: S, move: R, next: t_S}
+    - {state: t_S, read: "(", write: "(", move: R, next: t_S}
+    - {state: t_S, read: ")", write: ")", move: R, next: t_S}
+    - {state: t_S, read: "+", write: "+", move: R, next: t_S}
+    - {state: t_S, read: "=", write: "=", move: R, next: t_S}
+    - {state: t_S, read: "*", write: "*", move: R, next: t_S}
+    - {state: t_S, read: "-", write: "-", move: R, next: t_S}
+    - {state: t_S, read: "/", write: "/", move: R, next: t_S}
+    - {state: t_S, read: "^", write: "^", move: R, next: t_S}
+    - {state: t_S, read: "#", write: "#", move: R, next: t_S}
+    - {state: t_S, read: "1", write: "1", move: R, next: t_S}
+    - {state: t_S, read: B, write: "0", move: R, next: w_010}
+
+    # ( = 0011
+    - {state: t_abre, read: "0", write: "0", move: R, next: t_abre}
+    - {state: t_abre, read: S, write: S, move: R, next: t_abre}
+    - {state: t_abre, read: "(", write: "(", move: R, next: t_abre}
+    - {state: t_abre, read: ")", write: ")", move: R, next: t_abre}
+    - {state: t_abre, read: "+", write: "+", move: R, next: t_abre}
+    - {state: t_abre, read: "=", write: "=", move: R, next: t_abre}
+    - {state: t_abre, read: "*", write: "*", move: R, next: t_abre}
+    - {state: t_abre, read: "-", write: "-", move: R, next: t_abre}
+    - {state: t_abre, read: "/", write: "/", move: R, next: t_abre}
+    - {state: t_abre, read: "^", write: "^", move: R, next: t_abre}
+    - {state: t_abre, read: "#", write: "#", move: R, next: t_abre}
+    - {state: t_abre, read: "1", write: "1", move: R, next: t_abre}
+    - {state: t_abre, read: B, write: "0", move: R, next: w_011}
+
+    # ) = 0100
+    - {state: t_cierra, read: "0", write: "0", move: R, next: t_cierra}
+    - {state: t_cierra, read: S, write: S, move: R, next: t_cierra}
+    - {state: t_cierra, read: "(", write: "(", move: R, next: t_cierra}
+    - {state: t_cierra, read: ")", write: ")", move: R, next: t_cierra}
+    - {state: t_cierra, read: "+", write: "+", move: R, next: t_cierra}
+    - {state: t_cierra, read: "=", write: "=", move: R, next: t_cierra}
+    - {state: t_cierra, read: "*", write: "*", move: R, next: t_cierra}
+    - {state: t_cierra, read: "-", write: "-", move: R, next: t_cierra}
+    - {state: t_cierra, read: "/", write: "/", move: R, next: t_cierra}
+    - {state: t_cierra, read: "^", write: "^", move: R, next: t_cierra}
+    - {state: t_cierra, read: "#", write: "#", move: R, next: t_cierra}
+    - {state: t_cierra, read: "1", write: "1", move: R, next: t_cierra}
+    - {state: t_cierra, read: B, write: "0", move: R, next: w_100}
+
+    # + = 0101
+    - {state: t_mas, read: "0", write: "0", move: R, next: t_mas}
+    - {state: t_mas, read: S, write: S, move: R, next: t_mas}
+    - {state: t_mas, read: "(", write: "(", move: R, next: t_mas}
+    - {state: t_mas, read: ")", write: ")", move: R, next: t_mas}
+    - {state: t_mas, read: "+", write: "+", move: R, next: t_mas}
+    - {state: t_mas, read: "=", write: "=", move: R, next: t_mas}
+    - {state: t_mas, read: "*", write: "*", move: R, next: t_mas}
+    - {state: t_mas, read: "-", write: "-", move: R, next: t_mas}
+    - {state: t_mas, read: "/", write: "/", move: R, next: t_mas}
+    - {state: t_mas, read: "^", write: "^", move: R, next: t_mas}
+    - {state: t_mas, read: "#", write: "#", move: R, next: t_mas}
+    - {state: t_mas, read: "1", write: "1", move: R, next: t_mas}
+    - {state: t_mas, read: B, write: "0", move: R, next: w_101}
+
+    # = = 0110
+    - {state: t_igual, read: "0", write: "0", move: R, next: t_igual}
+    - {state: t_igual, read: S, write: S, move: R, next: t_igual}
+    - {state: t_igual, read: "(", write: "(", move: R, next: t_igual}
+    - {state: t_igual, read: ")", write: ")", move: R, next: t_igual}
+    - {state: t_igual, read: "+", write: "+", move: R, next: t_igual}
+    - {state: t_igual, read: "=", write: "=", move: R, next: t_igual}
+    - {state: t_igual, read: "*", write: "*", move: R, next: t_igual}
+    - {state: t_igual, read: "-", write: "-", move: R, next: t_igual}
+    - {state: t_igual, read: "/", write: "/", move: R, next: t_igual}
+    - {state: t_igual, read: "^", write: "^", move: R, next: t_igual}
+    - {state: t_igual, read: "#", write: "#", move: R, next: t_igual}
+    - {state: t_igual, read: "1", write: "1", move: R, next: t_igual}
+    - {state: t_igual, read: B, write: "0", move: R, next: w_110}
+
+    # * = 0111
+    - {state: t_por, read: "0", write: "0", move: R, next: t_por}
+    - {state: t_por, read: S, write: S, move: R, next: t_por}
+    - {state: t_por, read: "(", write: "(", move: R, next: t_por}
+    - {state: t_por, read: ")", write: ")", move: R, next: t_por}
+    - {state: t_por, read: "+", write: "+", move: R, next: t_por}
+    - {state: t_por, read: "=", write: "=", move: R, next: t_por}
+    - {state: t_por, read: "*", write: "*", move: R, next: t_por}
+    - {state: t_por, read: "-", write: "-", move: R, next: t_por}
+    - {state: t_por, read: "/", write: "/", move: R, next: t_por}
+    - {state: t_por, read: "^", write: "^", move: R, next: t_por}
+    - {state: t_por, read: "#", write: "#", move: R, next: t_por}
+    - {state: t_por, read: "1", write: "1", move: R, next: t_por}
+    - {state: t_por, read: B, write: "0", move: R, next: w_111}
+
+    # - = 1000
+    - {state: t_menos, read: "0", write: "0", move: R, next: t_menos}
+    - {state: t_menos, read: S, write: S, move: R, next: t_menos}
+    - {state: t_menos, read: "(", write: "(", move: R, next: t_menos}
+    - {state: t_menos, read: ")", write: ")", move: R, next: t_menos}
+    - {state: t_menos, read: "+", write: "+", move: R, next: t_menos}
+    - {state: t_menos, read: "=", write: "=", move: R, next: t_menos}
+    - {state: t_menos, read: "*", write: "*", move: R, next: t_menos}
+    - {state: t_menos, read: "-", write: "-", move: R, next: t_menos}
+    - {state: t_menos, read: "/", write: "/", move: R, next: t_menos}
+    - {state: t_menos, read: "^", write: "^", move: R, next: t_menos}
+    - {state: t_menos, read: "#", write: "#", move: R, next: t_menos}
+    - {state: t_menos, read: "1", write: "1", move: R, next: t_menos}
+    - {state: t_menos, read: B, write: "1", move: R, next: w_000}
+
+    # / = 1001
+    - {state: t_div, read: "0", write: "0", move: R, next: t_div}
+    - {state: t_div, read: S, write: S, move: R, next: t_div}
+    - {state: t_div, read: "(", write: "(", move: R, next: t_div}
+    - {state: t_div, read: ")", write: ")", move: R, next: t_div}
+    - {state: t_div, read: "+", write: "+", move: R, next: t_div}
+    - {state: t_div, read: "=", write: "=", move: R, next: t_div}
+    - {state: t_div, read: "*", write: "*", move: R, next: t_div}
+    - {state: t_div, read: "-", write: "-", move: R, next: t_div}
+    - {state: t_div, read: "/", write: "/", move: R, next: t_div}
+    - {state: t_div, read: "^", write: "^", move: R, next: t_div}
+    - {state: t_div, read: "#", write: "#", move: R, next: t_div}
+    - {state: t_div, read: "1", write: "1", move: R, next: t_div}
+    - {state: t_div, read: B, write: "1", move: R, next: w_001}
+
+    # ^ = 1010
+    - {state: t_pot, read: "0", write: "0", move: R, next: t_pot}
+    - {state: t_pot, read: S, write: S, move: R, next: t_pot}
+    - {state: t_pot, read: "(", write: "(", move: R, next: t_pot}
+    - {state: t_pot, read: ")", write: ")", move: R, next: t_pot}
+    - {state: t_pot, read: "+", write: "+", move: R, next: t_pot}
+    - {state: t_pot, read: "=", write: "=", move: R, next: t_pot}
+    - {state: t_pot, read: "*", write: "*", move: R, next: t_pot}
+    - {state: t_pot, read: "-", write: "-", move: R, next: t_pot}
+    - {state: t_pot, read: "/", write: "/", move: R, next: t_pot}
+    - {state: t_pot, read: "^", write: "^", move: R, next: t_pot}
+    - {state: t_pot, read: "#", write: "#", move: R, next: t_pot}
+    - {state: t_pot, read: "1", write: "1", move: R, next: t_pot}
+    - {state: t_pot, read: B, write: "1", move: R, next: w_010}
+
+    # w_xyz: escribe x y pasa a u_yz (los tres bits restantes son xyz)
+    - {state: w_000, read: B, write: "0", move: R, next: u_00}
+    - {state: w_001, read: B, write: "0", move: R, next: u_01}
+    - {state: w_010, read: B, write: "0", move: R, next: u_10}
+    - {state: w_011, read: B, write: "0", move: R, next: u_11}
+    - {state: w_100, read: B, write: "1", move: R, next: u_00}
+    - {state: w_101, read: B, write: "1", move: R, next: u_01}
+    - {state: w_110, read: B, write: "1", move: R, next: u_10}
+    - {state: w_111, read: B, write: "1", move: R, next: u_11}
+
+    # u_yz: escribe y y pasa a z_z
+    - {state: u_00, read: B, write: "0", move: R, next: z_0}
+    - {state: u_01, read: B, write: "0", move: R, next: z_1}
+    - {state: u_10, read: B, write: "1", move: R, next: z_0}
+    - {state: u_11, read: B, write: "1", move: R, next: z_1}
+
+    # z_z: escribe el último bit y regresa
+    - {state: z_0, read: B, write: "0", move: L, next: r1}
+    - {state: z_1, read: B, write: "1", move: L, next: r1}
+
+    # r1: retrocede por los bits hasta '#'; r2: retrocede por la expresión hasta la última X
+    - {state: r1, read: "0", write: "0", move: L, next: r1}
+    - {state: r1, read: "1", write: "1", move: L, next: r1}
+    - {state: r1, read: "#", write: "#", move: L, next: r2}
+    - {state: r2, read: "0", write: "0", move: L, next: r2}
+    - {state: r2, read: S, write: S, move: L, next: r2}
+    - {state: r2, read: "(", write: "(", move: L, next: r2}
+    - {state: r2, read: ")", write: ")", move: L, next: r2}
+    - {state: r2, read: "+", write: "+", move: L, next: r2}
+    - {state: r2, read: "=", write: "=", move: L, next: r2}
+    - {state: r2, read: "*", write: "*", move: L, next: r2}
+    - {state: r2, read: "-", write: "-", move: L, next: r2}
+    - {state: r2, read: "/", write: "/", move: L, next: r2}
+    - {state: r2, read: "^", write: "^", move: L, next: r2}
+    - {state: r2, read: X, write: X, move: R, next: e0}
   inputs:
     - "S(0)+S(0)"                    # válida
     - "S(S(0))=S(0)+S(0)"           # válida
