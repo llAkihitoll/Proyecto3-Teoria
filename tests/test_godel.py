@@ -3,7 +3,9 @@
 Fase 1 — validación: la MT acepta exactamente las expresiones de la gramática
     N := 0 | S(N);  Op := + | - | * | / | ^;  Suma := N (Op N)*;  Expr := Suma | Suma = Suma
 Fase 2 — codificación: cada símbolo se marca con X y su código de 4 bits se escribe después
-    de  # 1;  la cinta final es  X...X # 1 bits  con el cabezal sobre el '#'.
+    de  # 1.
+Fase 3 — limpieza: se borran la expresión (X) y el '#'; la cinta final es solo el número de
+    Gödel en binario (prefijo 1 + bloques de 4 bits) con el cabezal sobre el primer 1.
 """
 
 from itertools import product
@@ -31,10 +33,6 @@ CODES = {
 
 def encode(word):
     return "1" + "".join(CODES[c] for c in word)
-
-
-def phase2_tape(word):
-    return "X" * len(word) + "#" + encode(word)
 
 
 def _numeral(s, i):
@@ -120,21 +118,29 @@ def test_reference_grammar_sanity():
 
 
 @pytest.mark.parametrize("word", VALID)
-def test_valid_expressions_are_accepted_and_encoded(godel, word):
+def test_valid_expressions_leave_only_the_binary_godel_number(godel, word):
     result = simulate(godel, word, max_steps=100_000)
     assert result.outcome is Outcome.ACCEPTED
-    assert result.final_tape == phase2_tape(word)
-    assert result.ids[-1].head == len(word)
+    assert result.final_tape == encode(word)
+    final = result.ids[-1]
+    assert final.tape[final.head] == "1"
+    assert final.head == 0
+    assert set(final.tape) <= {"0", "1"}
 
 
 def test_mandatory_example(godel):
     result = simulate(godel, "S(0)+S(0)")
-    assert result.final_tape.split("#")[1] == "1001000110001010001010010001100010100"
+    assert result.final_tape == "1001000110001010001010010001100010100"
 
 
 def test_encoding_uses_four_bit_blocks_with_leading_one(godel):
-    assert simulate(godel, "0").final_tape == "X#10001"
-    assert len(simulate(godel, "S(0)+S(0)").final_tape.split("#")[1]) == 1 + 4 * 9
+    assert simulate(godel, "0").final_tape == "10001"
+    assert len(simulate(godel, "S(0)+S(0)").final_tape) == 1 + 4 * 9
+
+
+def test_leading_zeros_are_preserved(godel):
+    # 0 = 0001 y S = 0010: el prefijo 1 mantiene los ceros iniciales de los bloques
+    assert simulate(godel, "0").final_tape.startswith("1000")
 
 
 @pytest.mark.parametrize("word", INVALID)
@@ -151,7 +157,7 @@ def test_machine_matches_grammar_and_encoding_for_all_short_words(godel):
                 result = simulate(godel, word, max_steps=100_000)
                 if is_expression(word):
                     assert result.outcome is Outcome.ACCEPTED, word
-                    assert result.final_tape == phase2_tape(word), word
+                    assert result.final_tape == encode(word), word
                 else:
                     assert result.outcome is Outcome.REJECTED, word
 
@@ -160,4 +166,4 @@ def test_long_expressions_with_variable_length(godel):
     word = "S(S(S(S(S(0)))))+S(S(S(0)))=S(S(S(S(S(S(S(S(0))))))))"
     result = simulate(godel, word, max_steps=100_000)
     assert result.outcome is Outcome.ACCEPTED
-    assert result.final_tape == phase2_tape(word)
+    assert result.final_tape == encode(word)
