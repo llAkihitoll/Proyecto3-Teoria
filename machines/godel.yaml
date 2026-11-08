@@ -1,60 +1,4 @@
-# MT de codificación binaria de Gödel (sin potencias de primos) para expresiones de Peano.
-#
-# Etiqueta de reglas: "modo: godel" indica al programa que
-#   - las transiciones se escriben sin caché:  read: x, write: y   [δ(q, x) = (p, y, D)]
-#   - los símbolos fuera de Σ NO se descartan antes de simular: los rechaza la propia MT.
-#
-# Gramática aceptada (sin evaluar la expresión):
-#   N     := 0 | S(N)
-#   Op    := + | - | * | / | ^
-#   Suma  := N (Op N)*
-#   Expr  := Suma | Suma = Suma          (a lo más un '=')
-#   Los operadores solo se codifican; nunca se evalúan.
-#
-# Cinta inicial:  expresión B B B ...   (la MT escribe sola el separador y el prefijo: expresión # 1)
-#
-# ---- FASE 1: VALIDACIÓN ----
-#
-#  Pasada A: revisa la adyacencia de símbolos de izquierda a derecha y, si todo es correcto,
-#            escribe "#1" a la derecha de la expresión.
-#    v0, vS, vL, vE   antes del '=':  inicio de término / tras S / tras '(' / término completo
-#    w0, wS, wL, wE   después del '=': lo mismo (wE ya no admite otro '=')
-#    qE1              escribe el prefijo 1 tras el separador #
-#    qRet0            regresa al inicio de la cinta
-#
-#  Pasada B: verifica que en cada término (entre +, = y #) haya tantos S como ')'.
-#            Marca el primer S sin marcar (Y) y el último ')' sin marcar (Z), y repite.
-#    b0   busca el primer S sin marcar del término (lo marca Y)
-#    b1   avanza hasta el final del término
-#    b2   retrocede saltando ')' ya marcados (Z); marca el último ')' sin marcar; si no hay, rechaza
-#    b3   regresa al inicio del término
-#    bF   término sin S sin marcar: no puede sobrar ningún ')' (si sobra, rechaza)
-#    bG   avanza hasta el siguiente término (o al separador #)
-#    rR   restaura las marcas (Y -> S, Z -> ')') y deja el cabezal al inicio
-#    rR   restaura las marcas (Y -> S, Z -> ')') y deja el cabezal al inicio; sigue en e0
-#
-# ---- FASE 2: CODIFICACIÓN ----
-#
-#  Código de 4 bits por símbolo:  0=0001  S=0010  (=0011  )=0100  +=0101  ==0110
-#                                 *=0111  -=1000  /=1001  ^=1010
-#  Cinta al empezar la fase:  expresión # 1     (el resultado se escribe después del 1)
-#
-#    e0       lee el primer símbolo sin procesar, lo marca con X y pasa a su estado de viaje;
-#             si encuentra '#', todos los símbolos ya están codificados: borra el '#' y pasa a c1
-#    t_*      un estado de viaje por símbolo (t_0, t_S, t_abre, t_cierra, t_mas, t_igual,
-#             t_por, t_menos, t_div, t_pot): la memoria del símbolo está en el estado.
-#             Avanza hasta el primer blanco, escribe el primer bit de su código y sigue
-#    w_xyz    escribe el primer bit pendiente de los tres que faltan (compartido por símbolos)
-#    u_yz     escribe el siguiente bit de los dos que faltan
-#    z_z      escribe el último bit y regresa
-#    r1       retrocede por los bits escritos hasta el separador '#'
-#    r2       retrocede por la expresión hasta la última X y vuelve a e0
-#
-# ---- FASE 3: LIMPIEZA Y ACEPTACIÓN ----
-#
-#    c1       borra hacia la izquierda todas las X (la expresión ya codificada) hasta el blanco inicial
-#    c2       avanza por los blancos borrados hasta el prefijo 1 del resultado
-#    qf       aceptación: la cinta contiene solo el número de Gödel y el cabezal está sobre su primer 1
+
 modo: godel
 mt:
   states: [v0, vS, vL, vE, w0, wS, wL, wE, qE1, qRet0, b0, b1, b2, b3, bF, bG, rR,
@@ -396,14 +340,14 @@ mt:
     - {state: c2, read: B, write: B, move: R, next: c2}
     - {state: c2, read: "1", write: "1", move: S, next: qf}
   inputs:
-    - "S(0)+S(0)"                    # válida
-    - "S(S(0))=S(0)+S(0)"           # válida
-    - "S(S(0))*S(0)-0/S(0)^0"       # válida (operadores nuevos)
-    - "0"                           # válida
-    - "S(0"                         # falta ')'
-    - "S(0))"                       # sobra ')'
-    - "S(0+S(0))"                   # '+' dentro de un numeral
-    - "S(0)=S(0)=0"                 # dos '='
-    - "0+"                          # operador sin segundo término
-    - "S(0)*/0"                     # dos operadores seguidos
-    - "S(0)a"                       # símbolo desconocido
+    - "S(0)+S(0)"                   
+    - "S(S(0))=S(0)+S(0)"         
+    - "S(S(0))*S(0)-0/S(0)^0"      
+    - "0"                           
+    - "S(0"                       
+    - "S(0))"                      
+    - "S(0+S(0))"                 
+    - "S(0)=S(0)=0"                
+    - "0+"                        
+    - "S(0)*/0"                
+    - "S(0)a"                    

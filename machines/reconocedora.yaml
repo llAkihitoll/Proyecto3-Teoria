@@ -1,18 +1,4 @@
-# MT reconocedora: L = { a^n b^n c^n | n >= 1 }
-#
-# Idea: en cada ronda marca una 'a' con X, una 'b' con Y y una 'c' con Z, y
-# regresa a la X más a la derecha. Cuando ya no quedan 'a', verifica que solo
-# queden Y seguidas de Z (sin b ni c sueltas) y acepta.
-#
-#   q0: inicia una ronda (marca a -> X) o pasa a verificar si lee Y
-#   q1: avanza sobre a/Y hasta la primera b y la marca con Y
-#   q2: avanza sobre b/Z hasta la primera c y la marca con Z
-#   q3: regresa a la izquierda hasta encontrar X
-#   q4: verifica que solo queden Y
-#   q5: verifica que solo queden Z hasta el blanco
-#   qf: aceptación
-#
-# Esta máquina no necesita la caché, por eso siempre lee y escribe B en ella.
+
 mt:
   states: [q0, q1, q2, q3, q4, q5, qf]
   input_alphabet: [a, b, c]
@@ -117,7 +103,7 @@ mt:
       move: L
       next: qf
   inputs:
-    - "aabbcc"      # aceptada
-    - "aaabbbccc"   # aceptada
-    - "aabbbcc"     # rechazada: sobra una b
-    - "abcabc"      # rechazada: el orden no es a^n b^n c^n
+    - "aabbcc"      
+    - "aaabbbccc"  
+    - "aabbbcc"     
+    - "abcabc"      

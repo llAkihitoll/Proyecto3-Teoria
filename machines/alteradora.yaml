@@ -1,16 +1,4 @@
-# MT alteradora: duplica la cadena, w -> ww, con w en {a, b}*
-#
-# Idea: toma el siguiente símbolo original, lo guarda en la caché y lo marca
-# (a -> X, b -> Y). Lleva el símbolo en la caché hasta el final de la cinta y
-# escribe su copia (a -> P, b -> Q). Regresa a la última marca y repite. Cuando
-# ya no quedan originales, restaura las marcas y copias a 'a' y 'b'.
-#
-#   q0: toma el siguiente símbolo original, o pasa a restaurar si encuentra una copia
-#   q1: lleva el símbolo guardado en la caché hasta el primer blanco y escribe la copia
-#   q2: regresa a la izquierda hasta la última marca X/Y
-#   q3: restaura las copias (P -> a, Q -> b) hacia la derecha
-#   q4: restaura las marcas (X -> a, Y -> b) hacia la izquierda
-#   qf: aceptación, con el cabezal al inicio de ww
+
 mt:
   states: [q0, q1, q2, q3, q4, qf]
   input_alphabet: [a, b]

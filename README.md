@@ -64,6 +64,14 @@ python main.py machines/alteradora.yaml > salida.txt
 
 Si el YAML tiene errores, el programa los lista todos y termina con código de salida 1.
 
+### Interfaz gráfica (Tkinter)
+
+```bash
+python interfaz.py [archivo.yaml]
+```
+
+Tres segmentos: **Entrada** (lista para cambiar rápido entre las cadenas, campo para agregar una nueva y descripción de la máquina), **Pasos** (descripciones instantáneas de la cadena seleccionada) y **Resultados** (configuración final y tabla resumen). El botón "Cargar máquina" solo acepta archivos `.yaml`.
+
 ## Formato del archivo YAML
 
 ```yaml
