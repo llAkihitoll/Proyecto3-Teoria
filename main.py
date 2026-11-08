@@ -3,7 +3,6 @@
 Uso:
     python main.py machines/reconocedora.yaml
     python main.py machines/alteradora.yaml --max-steps 50000
-    python main.py machines/reconocedora.yaml --pcp --quiet
 """
 
 import argparse
@@ -14,7 +13,6 @@ from turing.dot import to_dot
 from turing.formatter import (
     format_id_line,
     format_machine,
-    format_pcp_report,
     format_report,
     format_result_footer,
     format_result_header,
@@ -85,11 +83,6 @@ def main(argv=None):
         metavar="archivo.dot",
         help="genera un archivo Graphviz (.dot) con el diagrama de estados de la máquina",
     )
-    parser.add_argument(
-        "--pcp",
-        action="store_true",
-        help="además de simular, construye la instancia PCP de cada cadena y su secuencia solución",
-    )
     args = parser.parse_args(argv)
     if args.max_steps < 0:
         parser.error("--max-steps no puede ser negativo")
@@ -114,14 +107,8 @@ def main(argv=None):
 
     results = simulate_all(machine, args.max_steps)
     report = format_report(machine, results, args.config, quiet=args.quiet, warnings=warnings)
-    pcp_report = ""
-    if args.pcp:
-        pcp_report = format_pcp_report(machine, results, args.max_steps, quiet=args.quiet)
-        report += "\n" + pcp_report
     if args.step:
         _run_step_by_step(machine, results, args.config, warnings)
-        if pcp_report:
-            print(pcp_report)
     else:
         print(report)
     if args.output:

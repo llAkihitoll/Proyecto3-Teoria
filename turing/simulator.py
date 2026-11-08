@@ -5,16 +5,17 @@ from .tape import Tape
 DEFAULT_MAX_STEPS = 10_000
 
 
-def _describe(step, state, cache, tape):
+def _describe(step, state, cache, tape, show_cache=True):
     symbols, head = tape.snapshot()
-    return InstantaneousDescription(step, state, cache, symbols, head)
+    return InstantaneousDescription(step, state, cache, symbols, head, show_cache)
 
 
 def simulate(machine, word, max_steps=DEFAULT_MAX_STEPS):
     if max_steps < 0:
         raise ValueError("max_steps no puede ser negativo")
 
-    invalid = machine.invalid_symbols(word)
+    # En modo Gödel la propia máquina debe rechazar los símbolos desconocidos.
+    invalid = machine.invalid_symbols(word) if machine.uses_cache else []
     if invalid:
         return SimulationResult(
             word,
@@ -22,9 +23,10 @@ def simulate(machine, word, max_steps=DEFAULT_MAX_STEPS):
             message=f"Símbolos fuera del alfabeto de entrada: {', '.join(invalid)}",
         )
 
+    show_cache = machine.uses_cache
     tape = Tape(word, machine.blank)
     state, cache = machine.initial_state, machine.blank
-    ids = [_describe(0, state, cache, tape)]
+    ids = [_describe(0, state, cache, tape, show_cache)]
     step = 0
 
     while True:
@@ -38,8 +40,9 @@ def simulate(machine, word, max_steps=DEFAULT_MAX_STEPS):
         transition = machine.get_transition(state, cache, symbol)
         if transition is None:
             outcome = Outcome.REJECTED
+            domain = f"[{state}, {cache}]" if show_cache else state
             message = (
-                f"No existe δ([{state}, {cache}], {symbol}) y {state} "
+                f"No existe δ({domain}, {symbol}) y {state} "
                 "no es un estado de aceptación"
             )
             break
@@ -55,7 +58,7 @@ def simulate(machine, word, max_steps=DEFAULT_MAX_STEPS):
         tape.move(transition.move)
         state, cache = transition.next_state, transition.write_cache
         step += 1
-        ids.append(_describe(step, state, cache, tape))
+        ids.append(_describe(step, state, cache, tape, show_cache))
 
     return SimulationResult(word, outcome, ids, tape.content(), message)
 

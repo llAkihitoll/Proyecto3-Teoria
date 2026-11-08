@@ -15,7 +15,10 @@ def to_dot(machine, name="MT"):
         lines.append(f'  "{_escape(q)}" [shape={shape}];')
 
     for t in machine.transitions.values():
-        label = f"{t.read_symbol},{t.read_cache} / {t.write_symbol},{t.write_cache} ; {t.move}"
+        if machine.uses_cache:
+            label = f"{t.read_symbol},{t.read_cache} / {t.write_symbol},{t.write_cache} ; {t.move}"
+        else:
+            label = f"{t.read_symbol} / {t.write_symbol} ; {t.move}"
         lines.append(
             f'  "{_escape(t.state)}" -> "{_escape(t.next_state)}" [label="{_escape(label)}"];'
         )

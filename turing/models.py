@@ -4,6 +4,9 @@ from enum import Enum
 
 BLANK = "B"
 MOVES = {"L": -1, "R": 1, "S": 0}
+MODE_STANDARD = "estandar"
+MODE_GODEL = "godel"
+MODES = (MODE_STANDARD, MODE_GODEL)
 
 
 @dataclass(frozen=True)
@@ -28,6 +31,13 @@ class Transition:
             f"([{self.next_state}, {self.write_cache}], {self.write_symbol}, {self.move})"
         )
 
+    def simple(self):
+        """Forma sin caché: δ(q, x) = (p, y, D)."""
+        return (
+            f"δ({self.state}, {self.read_symbol}) = "
+            f"({self.next_state}, {self.write_symbol}, {self.move})"
+        )
+
 
 @dataclass
 class TuringMachine:
@@ -39,6 +49,11 @@ class TuringMachine:
     transitions: dict  # (estado, caché, símbolo leído) -> Transition
     inputs: list = field(default_factory=list)
     blank: str = BLANK
+    mode: str = MODE_STANDARD
+
+    @property
+    def uses_cache(self):
+        return self.mode != MODE_GODEL
 
     def get_transition(self, state, cache, symbol):
         return self.transitions.get((state, cache, symbol))
@@ -68,11 +83,13 @@ class InstantaneousDescription:
     cache: str
     tape: tuple  # porción visible de la cinta
     head: int  # índice del cabezal dentro de `tape`
+    show_cache: bool = True
 
     def __str__(self):
         left = " ".join(self.tape[: self.head])
         right = " ".join(self.tape[self.head :])
-        parts = [p for p in (left, f"[{self.state}, {self.cache}]", right) if p]
+        control = f"[{self.state}, {self.cache}]" if self.show_cache else f"[{self.state}]"
+        parts = [p for p in (left, control, right) if p]
         return " ".join(parts)
 
 

@@ -1,7 +1,7 @@
 
 import yaml
 
-from .models import BLANK, MOVES, Transition, TuringMachine
+from .models import BLANK, MODE_GODEL, MODE_STANDARD, MODES, MOVES, Transition, TuringMachine
 
 REQUIRED_FIELDS = (
     "states",
@@ -13,6 +13,7 @@ REQUIRED_FIELDS = (
     "inputs",
 )
 TRANSITION_FIELDS = ("state", "read", "write", "move", "next")
+GODEL_INPUT_ALPHABET = frozenset("0S()+=*-/^")
 
 
 class ConfigError(Exception):
@@ -64,6 +65,15 @@ def _symbol_list(value, where, errors):
     return result
 
 
+def _parse_mode(data, errors):
+    raw = data.get("modo", MODE_STANDARD)
+    mode = raw if isinstance(raw, str) else None
+    if mode not in MODES:
+        errors.append(f"modo: '{raw}' no es válido (use {', '.join(MODES)})")
+        return MODE_STANDARD
+    return mode
+
+
 def parse_machine(data):
     if not isinstance(data, dict) or "mt" not in data:
         raise ConfigError("El archivo debe tener una clave raíz 'mt'")
@@ -76,6 +86,7 @@ def parse_machine(data):
         raise ConfigError([f"Falta el campo obligatorio 'mt.{f}'" for f in missing])
 
     errors = []
+    mode = _parse_mode(data, errors)
     states = _symbol_list(mt["states"], "states", errors)
     input_alphabet = _symbol_list(mt["input_alphabet"], "input_alphabet", errors)
     tape_alphabet = _symbol_list(mt["tape_alphabet"], "tape_alphabet", errors)
@@ -101,8 +112,15 @@ def parse_machine(data):
         errors.append(f"tape_alphabet: debe incluir el símbolo blanco '{BLANK}'")
     if BLANK in input_alphabet:
         errors.append(f"input_alphabet: no puede incluir el símbolo blanco '{BLANK}'")
+    if mode == MODE_GODEL and set(input_alphabet) != GODEL_INPUT_ALPHABET:
+        errors.append(
+            "input_alphabet: en modo godel debe ser exactamente "
+            f"{sorted(GODEL_INPUT_ALPHABET)} (tabla de codificación fija)"
+        )
 
-    transitions = _parse_transitions(mt["transitions"], state_set, tape_set, errors)
+    transitions = _parse_transitions(
+        mt["transitions"], state_set, tape_set, errors, with_cache=mode != MODE_GODEL
+    )
     inputs = _parse_inputs(mt["inputs"], errors)
 
     if errors:
@@ -116,10 +134,11 @@ def parse_machine(data):
         accept_states=set(accept_states),
         transitions=transitions,
         inputs=inputs,
+        mode=mode,
     )
 
 
-def _parse_transitions(raw, state_set, tape_set, errors):
+def _parse_transitions(raw, state_set, tape_set, errors, with_cache=True):
     if raw is None:
         return {}
     if not isinstance(raw, list):
@@ -141,8 +160,15 @@ def _parse_transitions(raw, state_set, tape_set, errors):
         state = _symbol(item["state"], f"{where}.state", local)
         next_state = _symbol(item["next"], f"{where}.next", local)
         move = _symbol(item["move"], f"{where}.move", local)
-        read = _symbol_pair(item["read"], f"{where}.read", local)
-        write = _symbol_pair(item["write"], f"{where}.write", local)
+        if with_cache:
+            read = _symbol_pair(item["read"], f"{where}.read", local)
+            write = _symbol_pair(item["write"], f"{where}.write", local)
+        else:
+            read = _single_symbol(item["read"], f"{where}.read", local)
+            write = _single_symbol(item["write"], f"{where}.write", local)
+            # sin caché: la caché se queda siempre en el blanco
+            read = read and [read, BLANK]
+            write = write and [BLANK, write]
 
         for name, q in (("state", state), ("next", next_state)):
             if q is not None and q not in state_set:
@@ -176,6 +202,13 @@ def _parse_transitions(raw, state_set, tape_set, errors):
             continue
         table[t.key] = t
     return table
+
+
+def _single_symbol(value, where, errors):
+    if isinstance(value, list):
+        errors.append(f"{where}: en modo godel no hay caché; escriba un solo símbolo, no una lista")
+        return None
+    return _symbol(value, where, errors)
 
 
 def _symbol_pair(value, where, errors):

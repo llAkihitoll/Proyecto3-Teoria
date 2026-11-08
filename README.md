@@ -52,6 +52,7 @@ Máquinas incluidas:
 ```bash
 python main.py machines/reconocedora.yaml   # MT reconocedora de a^n b^n c^n
 python main.py machines/alteradora.yaml     # MT alteradora w -> ww
+python main.py machines/godel.yaml          # MT de codificación binaria de Gödel (modo: godel)
 python main.py machines/ejemplo_pdf.yaml    # ejemplo literal del enunciado
 ```
 
@@ -127,6 +128,23 @@ El parser reporta **todos** los errores encontrados, por ejemplo:
 
 Una cadena de `inputs` con símbolos fuera de Σ no detiene el programa: se reporta como **ENTRADA INVÁLIDA**.
 
+### Etiqueta de reglas `modo`
+
+Una clave opcional al inicio del archivo, antes de `mt`, selecciona las reglas de la máquina:
+
+| `modo` | Reglas |
+|---|---|
+| `estandar` (por defecto, si se omite) | Las descritas arriba: transiciones con caché `[q, c]` |
+| `godel` | Transiciones **sin caché** (`read: x`, `write: y`, es decir δ(q, x) = (p, y, D)); Σ debe ser exactamente `{0, S, (, ), +, =, *, -, /, ^}`; los símbolos fuera de Σ **no** se descartan antes de simular: la propia MT los rechaza al no tener transición. Las IDs se muestran como `[q]` |
+
+```yaml
+modo: godel
+mt:
+  ...
+  transitions:
+    - {state: v0, read: S, write: S, move: R, next: vS}
+```
+
 ### Advertencias
 
 Además de los errores que impiden cargar el YAML, el programa revisa la máquina ya cargada y muestra **advertencias** (no detienen la ejecución):
@@ -200,6 +218,7 @@ Proyecto3/
 ├── machines/                # Máquinas en YAML
 │   ├── reconocedora.yaml
 │   ├── alteradora.yaml
+│   ├── godel.yaml
 │   └── ejemplo_pdf.yaml
 └── tests/                   # Pruebas unitarias y de integración
 ```
@@ -343,6 +362,30 @@ Resultados:
 | `babaa` | 5 | `babaababaa` | 73 |
 | `baaaab` | 6 | `baaaabbaaaab` | 99 |
 
+### MT de codificación de Gödel en binario — [`machines/godel.yaml`](machines/godel.yaml)
+
+Máquina con `modo: godel` que codifica expresiones de Peano como un número binario, sin potencias de primos: cada símbolo se reemplaza por un bloque de **cuatro bits** y se antepone un `1`.
+
+| Símbolo | `0` | `S` | `(` | `)` | `+` | `=` | `*` | `-` | `/` | `^` |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Código | 0001 | 0010 | 0011 | 0100 | 0101 | 0110 | 0111 | 1000 | 1001 | 1010 |
+
+Por ejemplo, `S(0)+S(0)` produce `1001000110001010001010010001100010100`. Los operadores `*`, `-`, `/` y `^` solo se codifican, nunca se evalúan. Se desarrolla en tres fases:
+
+1. **Validación** (implementada): acepta solo la gramática `N := 0 | S(N)`, `Suma := N (Op N)*` con `Op ∈ {+, -, *, /, ^}`, `Expr := Suma | Suma = Suma`, y rechaza paréntesis incorrectos, operadores mal colocados, más de un `=` y símbolos desconocidos. Escribe `#1` a la derecha de la expresión, deja el cabezal al inicio y acepta en `qV`.
+2. **Codificación**: marca cada símbolo con `X`, escribe sus cuatro bits tras el separador `#` y regresa por el siguiente.
+3. **Limpieza**: borra la expresión y el `#`, y deja solo el resultado binario.
+
+| Estado | Función |
+|---|---|
+| v0, vS, vL, vE | Adyacencia antes del `=`: inicio de término, tras `S`, tras `(`, término completo |
+| w0, wS, wL, wE | Lo mismo después del `=` (wE ya no admite otro `=`) |
+| qE1, qRet0 | Escribe el prefijo `1` tras `#` y regresa al inicio de la cinta |
+| b0, b1, b2, b3 | En cada término empareja cada `S` con un `)` marcándolos como `Y` y `Z` |
+| bF, bG | Verifican que no sobre ningún `)` y pasan al siguiente término |
+| rR | Restaura las marcas y deja el cabezal al inicio |
+| qV | Fin de la validación |
+
 ## Pruebas
 
 ```bash
@@ -358,6 +401,8 @@ python -m pytest
 | `tests/test_dot.py` | Unitaria | Exportación del diagrama de estados a Graphviz (`--dot`) |
 | `tests/test_cli.py` | Integración | Ejecución completa desde la línea de comandos: errores, `--max-steps`, `--input`, `--quiet`, `--output`, `--step` y `--dot` |
 | `tests/test_machines.py` | Integración | Máquinas de demostración: la reconocedora se compara contra la definición del lenguaje en todas las cadenas sobre {a, b, c} de longitud ≤ 7, y la alteradora produce ww para todas las cadenas sobre {a, b} de longitud ≤ 7 |
+| `tests/test_godel_mode.py` | Unitaria | Etiqueta `modo`: transiciones sin caché, errores de configuración, símbolos desconocidos rechazados por la MT e IDs sin caché |
+| `tests/test_godel.py` | Integración | MT de Gödel, fase 1: la validación coincide con la gramática en todas las cadenas sobre {0, S, (, ), +, =} de longitud ≤ 6 y sobre los 10 símbolos de longitud ≤ 5, y deja `expresión#1` en la cinta |
 
 ## Video de demostración
 

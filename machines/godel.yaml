@@ -1,0 +1,176 @@
+# MT de codificación binaria de Gödel (sin potencias de primos) para expresiones de Peano.
+#
+# Etiqueta de reglas: "modo: godel" indica al programa que
+#   - las transiciones se escriben sin caché:  read: x, write: y   [δ(q, x) = (p, y, D)]
+#   - los símbolos fuera de Σ NO se descartan antes de simular: los rechaza la propia MT.
+#
+# Gramática aceptada (sin evaluar la expresión):
+#   N     := 0 | S(N)
+#   Op    := + | - | * | / | ^
+#   Suma  := N (Op N)*
+#   Expr  := Suma | Suma = Suma          (a lo más un '=')
+#   Los operadores solo se codifican; nunca se evalúan.
+#
+# Cinta inicial:  expresión B B B ...   (la MT escribe sola el separador y el prefijo: expresión # 1)
+#
+# ---- FASE 1: VALIDACIÓN (esta versión acepta en qV al terminar la validación) ----
+#
+#  Pasada A: revisa la adyacencia de símbolos de izquierda a derecha y, si todo es correcto,
+#            escribe "#1" a la derecha de la expresión.
+#    v0, vS, vL, vE   antes del '=':  inicio de término / tras S / tras '(' / término completo
+#    w0, wS, wL, wE   después del '=': lo mismo (wE ya no admite otro '=')
+#    qE1              escribe el prefijo 1 tras el separador #
+#    qRet0            regresa al inicio de la cinta
+#
+#  Pasada B: verifica que en cada término (entre +, = y #) haya tantos S como ')'.
+#            Marca el primer S sin marcar (Y) y el último ')' sin marcar (Z), y repite.
+#    b0   busca el primer S sin marcar del término (lo marca Y)
+#    b1   avanza hasta el final del término
+#    b2   retrocede saltando ')' ya marcados (Z); marca el último ')' sin marcar; si no hay, rechaza
+#    b3   regresa al inicio del término
+#    bF   término sin S sin marcar: no puede sobrar ningún ')' (si sobra, rechaza)
+#    bG   avanza hasta el siguiente término (o al separador #)
+#    rR   restaura las marcas (Y -> S, Z -> ')') y deja el cabezal al inicio
+#    qV   fin de la validación (aceptación en esta fase)
+modo: godel
+mt:
+  states: [v0, vS, vL, vE, w0, wS, wL, wE, qE1, qRet0, b0, b1, b2, b3, bF, bG, rR, qV]
+  input_alphabet: ["0", S, "(", ")", "+", "=", "*", "-", "/", "^"]
+  tape_alphabet: ["0", "1", S, "(", ")", "+", "=", "*", "-", "/", "^", "#", Y, Z, B]
+  initial_state: v0
+  accept_states: [qV]
+  transitions:
+    # ---------- Pasada A: adyacencia (antes del '=') ----------
+    - {state: v0, read: S, write: S, move: R, next: vS}
+    - {state: v0, read: "0", write: "0", move: R, next: vE}
+    - {state: vS, read: "(", write: "(", move: R, next: vL}
+    - {state: vL, read: S, write: S, move: R, next: vS}
+    - {state: vL, read: "0", write: "0", move: R, next: vE}
+    - {state: vE, read: ")", write: ")", move: R, next: vE}
+    - {state: vE, read: "+", write: "+", move: R, next: v0}
+    - {state: vE, read: "*", write: "*", move: R, next: v0}
+    - {state: vE, read: "-", write: "-", move: R, next: v0}
+    - {state: vE, read: "/", write: "/", move: R, next: v0}
+    - {state: vE, read: "^", write: "^", move: R, next: v0}
+    - {state: vE, read: "=", write: "=", move: R, next: w0}
+    - {state: vE, read: B, write: "#", move: R, next: qE1}
+
+    # ---------- Pasada A: adyacencia (después del '=') ----------
+    - {state: w0, read: S, write: S, move: R, next: wS}
+    - {state: w0, read: "0", write: "0", move: R, next: wE}
+    - {state: wS, read: "(", write: "(", move: R, next: wL}
+    - {state: wL, read: S, write: S, move: R, next: wS}
+    - {state: wL, read: "0", write: "0", move: R, next: wE}
+    - {state: wE, read: ")", write: ")", move: R, next: wE}
+    - {state: wE, read: "+", write: "+", move: R, next: w0}
+    - {state: wE, read: "*", write: "*", move: R, next: w0}
+    - {state: wE, read: "-", write: "-", move: R, next: w0}
+    - {state: wE, read: "/", write: "/", move: R, next: w0}
+    - {state: wE, read: "^", write: "^", move: R, next: w0}
+    - {state: wE, read: B, write: "#", move: R, next: qE1}
+
+    # ---------- Prefijo 1 y regreso al inicio ----------
+    - {state: qE1, read: B, write: "1", move: L, next: qRet0}
+    - {state: qRet0, read: "0", write: "0", move: L, next: qRet0}
+    - {state: qRet0, read: "1", write: "1", move: L, next: qRet0}
+    - {state: qRet0, read: S, write: S, move: L, next: qRet0}
+    - {state: qRet0, read: "(", write: "(", move: L, next: qRet0}
+    - {state: qRet0, read: ")", write: ")", move: L, next: qRet0}
+    - {state: qRet0, read: "+", write: "+", move: L, next: qRet0}
+    - {state: qRet0, read: "*", write: "*", move: L, next: qRet0}
+    - {state: qRet0, read: "-", write: "-", move: L, next: qRet0}
+    - {state: qRet0, read: "/", write: "/", move: L, next: qRet0}
+    - {state: qRet0, read: "^", write: "^", move: L, next: qRet0}
+    - {state: qRet0, read: "=", write: "=", move: L, next: qRet0}
+    - {state: qRet0, read: "#", write: "#", move: L, next: qRet0}
+    - {state: qRet0, read: B, write: B, move: R, next: b0}
+
+    # ---------- Pasada B: b0 busca el primer S sin marcar ----------
+    - {state: b0, read: S, write: Y, move: R, next: b1}
+    - {state: b0, read: Y, write: Y, move: R, next: b0}
+    - {state: b0, read: "(", write: "(", move: R, next: b0}
+    - {state: b0, read: "0", write: "0", move: R, next: b0}
+    - {state: b0, read: ")", write: ")", move: R, next: b0}
+    - {state: b0, read: Z, write: Z, move: R, next: b0}
+    - {state: b0, read: "+", write: "+", move: L, next: bF}
+    - {state: b0, read: "*", write: "*", move: L, next: bF}
+    - {state: b0, read: "-", write: "-", move: L, next: bF}
+    - {state: b0, read: "/", write: "/", move: L, next: bF}
+    - {state: b0, read: "^", write: "^", move: L, next: bF}
+    - {state: b0, read: "=", write: "=", move: L, next: bF}
+    - {state: b0, read: "#", write: "#", move: L, next: bF}
+
+    # b1: hasta el final del término
+    - {state: b1, read: S, write: S, move: R, next: b1}
+    - {state: b1, read: Y, write: Y, move: R, next: b1}
+    - {state: b1, read: "(", write: "(", move: R, next: b1}
+    - {state: b1, read: "0", write: "0", move: R, next: b1}
+    - {state: b1, read: ")", write: ")", move: R, next: b1}
+    - {state: b1, read: Z, write: Z, move: R, next: b1}
+    - {state: b1, read: "+", write: "+", move: L, next: b2}
+    - {state: b1, read: "*", write: "*", move: L, next: b2}
+    - {state: b1, read: "-", write: "-", move: L, next: b2}
+    - {state: b1, read: "/", write: "/", move: L, next: b2}
+    - {state: b1, read: "^", write: "^", move: L, next: b2}
+    - {state: b1, read: "=", write: "=", move: L, next: b2}
+    - {state: b1, read: "#", write: "#", move: L, next: b2}
+
+    # b2: marca el último ')' sin marcar; si hay otra cosa, faltan ')' y rechaza
+    - {state: b2, read: Z, write: Z, move: L, next: b2}
+    - {state: b2, read: ")", write: Z, move: L, next: b3}
+
+    # b3: regresa al inicio del término
+    - {state: b3, read: S, write: S, move: L, next: b3}
+    - {state: b3, read: Y, write: Y, move: L, next: b3}
+    - {state: b3, read: "(", write: "(", move: L, next: b3}
+    - {state: b3, read: "0", write: "0", move: L, next: b3}
+    - {state: b3, read: ")", write: ")", move: L, next: b3}
+    - {state: b3, read: Z, write: Z, move: L, next: b3}
+    - {state: b3, read: "+", write: "+", move: R, next: b0}
+    - {state: b3, read: "*", write: "*", move: R, next: b0}
+    - {state: b3, read: "-", write: "-", move: R, next: b0}
+    - {state: b3, read: "/", write: "/", move: R, next: b0}
+    - {state: b3, read: "^", write: "^", move: R, next: b0}
+    - {state: b3, read: "=", write: "=", move: R, next: b0}
+    - {state: b3, read: B, write: B, move: R, next: b0}
+
+    # bF: no puede sobrar ningún ')' sin marcar
+    - {state: bF, read: Z, write: Z, move: L, next: bF}
+    - {state: bF, read: "0", write: "0", move: R, next: bG}
+
+    # bG: pasa al siguiente término; al llegar a '#' se restauran las marcas
+    - {state: bG, read: Z, write: Z, move: R, next: bG}
+    - {state: bG, read: "+", write: "+", move: R, next: b0}
+    - {state: bG, read: "*", write: "*", move: R, next: b0}
+    - {state: bG, read: "-", write: "-", move: R, next: b0}
+    - {state: bG, read: "/", write: "/", move: R, next: b0}
+    - {state: bG, read: "^", write: "^", move: R, next: b0}
+    - {state: bG, read: "=", write: "=", move: R, next: b0}
+    - {state: bG, read: "#", write: "#", move: L, next: rR}
+
+    # rR: restaura Y -> S y Z -> ')' y regresa al inicio de la cinta
+    - {state: rR, read: Y, write: S, move: L, next: rR}
+    - {state: rR, read: Z, write: ")", move: L, next: rR}
+    - {state: rR, read: S, write: S, move: L, next: rR}
+    - {state: rR, read: "(", write: "(", move: L, next: rR}
+    - {state: rR, read: ")", write: ")", move: L, next: rR}
+    - {state: rR, read: "0", write: "0", move: L, next: rR}
+    - {state: rR, read: "+", write: "+", move: L, next: rR}
+    - {state: rR, read: "*", write: "*", move: L, next: rR}
+    - {state: rR, read: "-", write: "-", move: L, next: rR}
+    - {state: rR, read: "/", write: "/", move: L, next: rR}
+    - {state: rR, read: "^", write: "^", move: L, next: rR}
+    - {state: rR, read: "=", write: "=", move: L, next: rR}
+    - {state: rR, read: B, write: B, move: R, next: qV}
+  inputs:
+    - "S(0)+S(0)"                    # válida
+    - "S(S(0))=S(0)+S(0)"           # válida
+    - "S(S(0))*S(0)-0/S(0)^0"       # válida (operadores nuevos)
+    - "0"                           # válida
+    - "S(0"                         # falta ')'
+    - "S(0))"                       # sobra ')'
+    - "S(0+S(0))"                   # '+' dentro de un numeral
+    - "S(0)=S(0)=0"                 # dos '='
+    - "0+"                          # operador sin segundo término
+    - "S(0)*/0"                     # dos operadores seguidos
+    - "S(0)a"                       # símbolo desconocido
