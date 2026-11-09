@@ -1,6 +1,16 @@
 # Proyecto 3 — Simulador de Máquinas de Turing
 
-Simulador de Máquinas de Turing (MT) **de una cinta** para el curso de Teoría de la Computación. El programa:
+Simulador de Máquinas de Turing (MT) **de una cinta** para el curso de Teoría de la Computación.
+
+### Miembros:
+- Arturo Lima - 24683
+- Saul Castillo - 24915
+- Esteban Gonzalez - 24005
+
+### Video de demostración y explicación del programa:
+[Ver video en YouTube](https://youtu.be/_DnWehDj7uM)
+
+El programa:
 
 1. Lee la descripción formal de una MT desde un archivo YAML.
 2. Simula cada cadena de entrada configurada en ese archivo.
