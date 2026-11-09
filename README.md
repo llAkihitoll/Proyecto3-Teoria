@@ -48,7 +48,7 @@ Máquinas incluidas:
 python main.py machines/reconocedora.yaml   # MT reconocedora de a^n b^n c^n
 python main.py machines/alteradora.yaml     # MT alteradora w -> ww
 python main.py machines/godel.yaml          # MT de codificación binaria de Gödel (modo: godel)
-python main.py machines/ejemplo_pdf.yaml    # ejemplo literal del enunciado
+python main.py machines/ejemplo_pdf.yaml    # ejemplo de prueba 
 ```
 
 Si el YAML tiene errores, el programa los lista todos y termina con código de salida 1.
@@ -85,7 +85,7 @@ mt:
 
 ### Interpretación de las transiciones
 
-El enunciado traduce la transición del ejemplo así:
+El enunciado traduce las instrucciones de transicion de la siguiente manera: 
 
 ```
 read: [a, B], write: [a, B], move: R, next: q1   ≡   δ([q0, B], a) = ([q1, a], B, R)
@@ -100,8 +100,6 @@ Es decir, se usa el modelo de MT con **almacenamiento en el estado** (caché): e
 | `write: [c', y]` | `c'` = nuevo valor de la caché, `y` = símbolo que se escribe en la cinta |
 | `move` | `L` (izquierda), `R` (derecha) o `S` (no se mueve) |
 | `next` | Estado siguiente |
-
-Una máquina que no necesite caché simplemente lee y escribe `B` en la segunda/primera posición, respectivamente.
 
 
 ### Etiqueta de reglas `modo`
@@ -127,14 +125,14 @@ mt:
 |---|---|
 | ACEPTADA | La máquina entra en un estado de `accept_states` |
 | RECHAZADA | No existe transición aplicable y el estado actual no es de aceptación |
-| DETENIDA POR LÍMITE DE PASOS | Se alcanzó `--max-steps` sin que la máquina se detuviera (no se clasifica como aceptada ni rechazada) |
+| DETENIDA POR LÍMITE DE PASOS | Se alcanzó `--max-steps` sin que la máquina se detuviera, no es clasificada como aceptada ni rechazada.|
 | ENTRADA INVÁLIDA | La cadena contiene símbolos fuera de Σ |
 
 ## Arquitectura
 
 ```
 Proyecto3/
-├── main.py                  # Interfaz de línea de comandos
+├── main.py                 
 ├── turing/
 │   ├── models.py            # Estructuras de datos
 │   ├── parser.py            # Lectura y validación del YAML
@@ -286,6 +284,6 @@ Máquina con `modo: godel` que codifica expresiones de Peano como un número bin
 
 Por ejemplo, `S(0)+S(0)` produce `1001000110001010001010010001100010100`. Los operadores `*`, `-`, `/` y `^` solo se codifican, nunca se evalúan. Fases:
 
-1. **Validación** (`v*`, `w*`, `b*`, `bF`, `bG`, `qE1`, `qRet0`, `rR`): acepta solo la gramática `N := 0 | S(N)`, `Suma := N (Op N)*` con `Op ∈ {+, -, *, /, ^}`, `Expr := Suma | Suma = Suma`. Rechaza paréntesis incorrectos, operadores mal colocados, más de un `=` y símbolos desconocidos. Los estados `v*`/`w*` revisan la adyacencia antes/después del `=`, y `b*` empareja cada `S` con un `)` (marcas `Y`/`Z`, restauradas por `rR`). Al terminar escribe `#1` a la derecha y deja el cabezal al inicio.
+1. **Validación** (`v*`, `w*`, `b*`, `bF`, `bG`, `qE1`, `qRet0`, `rR`): acepta solo la gramática `N := 0 | S(N)`, `Suma := N (Op N)*` con `Op ∈ {+, -, *, /, ^}`, `Expr := Suma | Suma = Suma`. Rechaza paréntesis incorrectos, operadores mal colocados, más de un `=` y símbolos desconocidos. Los estados `v*`/`w*` revisan la adyacencia antes/después del `=`, y `b*` empareja cada `S` con un `)`. Al terminar escribe `#1` a la derecha y deja el cabezal al inicio.
 2. **Codificación** (`e0`, `t_*`, `w_xyz`, `u_yz`, `z_z`, `r1`, `r2`): `e0` marca con `X` el primer símbolo sin procesar y pasa a un estado de viaje propio de ese símbolo (la memoria está en el estado). Este avanza al primer blanco y escribe el primer bit; los estados compartidos `w_xyz`, `u_yz` y `z_z` escriben los otros tres. `r1` y `r2` regresan a la última `X`. Al encontrar `#` lo borra y pasa a la limpieza.
 3. **Limpieza** (`c1`, `c2`, `qf`): `c1` borra las `X` hacia la izquierda y `c2` avanza por los blancos hasta el prefijo `1`, donde acepta en `qf`. La cinta queda solo con el número de Gödel y el cabezal sobre su primer `1`.
