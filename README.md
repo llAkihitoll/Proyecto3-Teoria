@@ -7,6 +7,10 @@ Simulador de Máquinas de Turing (MT) **de una cinta** para el curso de Teoría 
 - Saul Castillo - 24915
 - Esteban Gonzalez - 24005
 
+### Fotografía del funcionamiento del programa: 
+<img width="1917" height="1135" alt="image" src="https://github.com/user-attachments/assets/3a3be991-a78d-461d-91d3-c709714260bc" />
+
+
 ### Video de demostración y explicación del programa:
 [Ver video en YouTube](https://youtu.be/_DnWehDj7uM)
 
