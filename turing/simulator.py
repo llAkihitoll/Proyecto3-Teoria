@@ -47,8 +47,6 @@ def simulate(machine, word, max_steps=DEFAULT_MAX_STEPS):
             )
             break
 
-        # El límite se revisa después de buscar la transición, para que una
-        # máquina que se detiene justo en el paso max_steps no se marque como límite.
         if step >= max_steps:
             outcome = Outcome.STEP_LIMIT
             message = f"Se alcanzó el límite de {max_steps} pasos sin que la máquina se detuviera"

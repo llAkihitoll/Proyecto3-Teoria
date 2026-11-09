@@ -14,7 +14,7 @@ Simulador de Máquinas de Turing (MT) **de una cinta** para el curso de Teoría 
 - PyYAML (para leer los archivos de configuración)
 - pytest (solo para ejecutar las pruebas)
 
-## Instalación
+## Como iniciar 
 
 ```bash
 git clone https://github.com/llAkihitoll/Proyecto3-Teoria.git
@@ -22,30 +22,11 @@ cd Proyecto3-Teoria
 pip install -r requirements.txt
 ```
 
-Opcionalmente, dentro de un entorno virtual:
+### Interfaz gráfica (Tkinter)
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate          # Windows
-source .venv/bin/activate       # Linux / macOS
-pip install -r requirements.txt
+python interfaz.py [archivo.yaml]
 ```
-
-## Ejecución
-
-```bash
-python main.py <archivo.yaml> [--max-steps N] [--input cadena] [--quiet] [--output archivo.txt] [--step] [--dot archivo.dot]
-```
-
-| Argumento | Descripción |
-|---|---|
-| `archivo.yaml` | Descripción de la máquina y cadenas a simular |
-| `--max-steps N` | Límite de pasos por cadena (por defecto 10 000) |
-| `--input cadena` | Simula una cadena adicional sin modificar `inputs` en el YAML (se puede repetir) |
-| `--quiet` | Solo muestra la tabla resumen final, sin las descripciones instantáneas de cada cadena |
-| `--output archivo.txt` | Además de mostrarla en pantalla, guarda la salida en `archivo.txt` (sin necesidad de redirigir con `>`) |
-| `--step` | Modo paso a paso: muestra una ID a la vez y espera Enter para mostrar la siguiente (no se puede combinar con `--quiet`) |
-| `--dot archivo.dot` | Genera un archivo Graphviz con el diagrama de estados de la máquina (ver [Diagrama de estados](#diagrama-de-estados-dot)) |
 
 Máquinas incluidas:
 
@@ -56,21 +37,7 @@ python main.py machines/godel.yaml          # MT de codificación binaria de Gö
 python main.py machines/ejemplo_pdf.yaml    # ejemplo literal del enunciado
 ```
 
-Para guardar la salida en un archivo:
-
-```bash
-python main.py machines/alteradora.yaml > salida.txt
-```
-
 Si el YAML tiene errores, el programa los lista todos y termina con código de salida 1.
-
-### Interfaz gráfica (Tkinter)
-
-```bash
-python interfaz.py [archivo.yaml]
-```
-
-Cuatro bloques: **Cadenas de entrada** (lista para cambiar rápido entre las cadenas, coloreadas según su resultado, y un campo para simular una nueva), **Máquina** (descripción y advertencias), **Pasos** (descripciones instantáneas de la cadena seleccionada) y **Resultado** (configuración final de la cadena seleccionada). El botón "Agregar archivo" solo acepta archivos `.yaml`. Las fotografías de Gödel y Turing se leen de la carpeta `assets/` (requiere Pillow; sin ella la interfaz funciona sin fotos).
 
 ## Formato del archivo YAML
 
@@ -122,19 +89,6 @@ Es decir, se usa el modelo de MT con **almacenamiento en el estado** (caché): e
 
 Una máquina que no necesite caché simplemente lee y escribe `B` en la segunda/primera posición, respectivamente.
 
-### Validaciones
-
-El parser reporta **todos** los errores encontrados, por ejemplo:
-
-- Falta la raíz `mt` o algún campo obligatorio.
-- Estados o símbolos repetidos.
-- `initial_state` o `accept_states` que no pertenecen a `states`.
-- Σ no contenido en Γ, `B` ausente de Γ o presente en Σ.
-- Transiciones con estados o símbolos desconocidos, `read`/`write` que no son pares, movimiento inválido o campos faltantes.
-- Transiciones duplicadas para el mismo `(estado, caché, símbolo)` (la MT debe ser determinista).
-- Valores que YAML convierte implícitamente (`yes`/`no` a booleano, `0101` a número); deben ir entre comillas.
-
-Una cadena de `inputs` con símbolos fuera de Σ no detiene el programa: se reporta como **ENTRADA INVÁLIDA**.
 
 ### Etiqueta de reglas `modo`
 
@@ -153,46 +107,6 @@ mt:
     - {state: v0, read: S, write: S, move: R, next: vS}
 ```
 
-### Advertencias
-
-Además de los errores que impiden cargar el YAML, el programa revisa la máquina ya cargada y muestra **advertencias** (no detienen la ejecución):
-
-- Estados inalcanzables desde `initial_state` (por ejemplo, en `machines/ejemplo_pdf.yaml` los estados `q2` y `qf` nunca se usan, porque el ejemplo del enunciado solo define dos transiciones).
-- Transiciones que parten de un estado de aceptación: nunca se ejecutan, porque la máquina se detiene en cuanto entra a ese estado.
-- Símbolos de `tape_alphabet` que ninguna transición lee ni escribe.
-
-## Salida
-
-Para cada cadena se muestra:
-
-```
-----------------------------------------------------------------------
-Entrada 4/4: "abcabc"
-----------------------------------------------------------------------
-Descripciones instantáneas:
-    0:  [q0, B] a b c a b c
-  ⊢ 1:  X [q1, B] b c a b c
-  ⊢ 2:  X Y [q2, B] c a b c
-  ⊢ 3:  X [q3, B] Y Z a b c
-  ⊢ 4:  [q3, B] X Y Z a b c
-  ⊢ 5:  X [q0, B] Y Z a b c
-  ⊢ 6:  X Y [q4, B] Z a b c
-  ⊢ 7:  X Y Z [q5, B] a b c
-
-Configuración final:
-  ID:          X Y Z [q5, B] a b c
-  Estado:      [q5, B]
-  Cinta:       X Y Z a b c
-                     ^
-  Contenido:   XYZabc
-  Pasos:       7
-
-Resultado: RECHAZADA
-Motivo:    No existe δ([q5, B], a) y q5 no es un estado de aceptación
-```
-
-Cada ID sigue la notación `X1 … Xi-1 [q, c] Xi … Xn`: el par `[q, c]` aparece justo antes del símbolo que está bajo el cabezal. Se muestran los símbolos no blancos de la cinta y la celda del cabezal (los blancos de los extremos se omiten, como en la notación de Hopcroft). Al inicio se imprime la descripción formal de la máquina y al final una tabla resumen.
-
 ### Resultados posibles
 
 | Resultado | Cuándo ocurre |
@@ -201,15 +115,6 @@ Cada ID sigue la notación `X1 … Xi-1 [q, c] Xi … Xn`: el par `[q, c]` apare
 | RECHAZADA | No existe transición aplicable y el estado actual no es de aceptación |
 | DETENIDA POR LÍMITE DE PASOS | Se alcanzó `--max-steps` sin que la máquina se detuviera (no se clasifica como aceptada ni rechazada) |
 | ENTRADA INVÁLIDA | La cadena contiene símbolos fuera de Σ |
-
-### Diagrama de estados (`--dot`)
-
-```bash
-python main.py machines/reconocedora.yaml --dot reconocedora.dot
-dot -Tpng reconocedora.dot -o reconocedora.png   # requiere Graphviz instalado
-```
-
-Genera un archivo `.dot` con un nodo por estado (doble círculo para los de `accept_states`) y una arista por transición, etiquetada como `símbolo_leído,caché / símbolo_escrito,nueva_caché ; movimiento`. El programa sigue mostrando la simulación normalmente después de escribir el archivo.
 
 ## Arquitectura
 
@@ -221,8 +126,7 @@ Proyecto3/
 │   ├── parser.py            # Lectura y validación del YAML
 │   ├── tape.py              # Cinta infinita y cabezal
 │   ├── simulator.py         # Motor de simulación
-│   ├── formatter.py         # Presentación de resultados
-│   └── dot.py               # Exportación del diagrama de estados a Graphviz
+│   └── formatter.py         # Presentación de resultados
 ├── machines/                # Máquinas en YAML
 │   ├── reconocedora.yaml
 │   ├── alteradora.yaml
@@ -243,18 +147,6 @@ archivo.yaml ──► parser.load_machine ──► TuringMachine
                                               ▼
                       formatter.format_report ──► texto en consola
 ```
-
-Cada módulo tiene una sola responsabilidad: el parser no simula, el simulador no imprime y el formateador no calcula. Las máquinas de demostración no tienen ningún caso especial en el código: son solo archivos YAML que se ejecutan con el mismo motor.
-
-### Estructuras de datos (`turing/models.py`)
-
-| Estructura | Contenido |
-|---|---|
-| `Transition` | `state`, `read_symbol`, `read_cache`, `next_state`, `write_cache`, `write_symbol`, `move`. Se imprime como `δ([q, c], x) = ([p, c'], y, D)` |
-| `TuringMachine` | Q, Σ, Γ, estado inicial, F, cadenas y la tabla δ como diccionario `(estado, caché, símbolo) → Transition`, de modo que cada búsqueda es O(1) |
-| `InstantaneousDescription` | Número de paso, estado, caché, porción visible de la cinta y posición del cabezal en ella |
-| `SimulationResult` | Cadena, resultado (`Outcome`), lista de IDs, contenido final de la cinta y motivo |
-| `Outcome` | ACEPTADA, RECHAZADA, DETENIDA POR LÍMITE DE PASOS, ENTRADA INVÁLIDA |
 
 ### Cinta (`turing/tape.py`)
 
@@ -378,45 +270,8 @@ Máquina con `modo: godel` que codifica expresiones de Peano como un número bin
 |---|---|---|---|---|---|---|---|---|---|---|
 | Código | 0001 | 0010 | 0011 | 0100 | 0101 | 0110 | 0111 | 1000 | 1001 | 1010 |
 
-Por ejemplo, `S(0)+S(0)` produce `1001000110001010001010010001100010100`. Los operadores `*`, `-`, `/` y `^` solo se codifican, nunca se evalúan. Se desarrolla en tres fases:
+Por ejemplo, `S(0)+S(0)` produce `1001000110001010001010010001100010100`. Los operadores `*`, `-`, `/` y `^` solo se codifican, nunca se evalúan. Fases:
 
-1. **Validación** (implementada): acepta solo la gramática `N := 0 | S(N)`, `Suma := N (Op N)*` con `Op ∈ {+, -, *, /, ^}`, `Expr := Suma | Suma = Suma`, y rechaza paréntesis incorrectos, operadores mal colocados, más de un `=` y símbolos desconocidos. Escribe `#1` a la derecha de la expresión, deja el cabezal al inicio y pasa a la codificación.
-2. **Codificación** (implementada): `e0` marca con `X` el primer símbolo sin procesar y pasa a un estado de viaje propio de ese símbolo (la memoria está en el estado, no en una caché). El viaje avanza hasta el primer blanco, escribe el primer bit y los estados compartidos `w_xyz`, `u_yz` y `z_z` escriben los tres restantes, cada uno con una transición explícita. Luego `r1` y `r2` regresan hasta la última `X`. Al encontrar `#` lo borra y pasa a la limpieza.
-3. **Limpieza** (implementada): `c1` borra hacia la izquierda todas las `X` (la expresión ya codificada) hasta el blanco inicial y `c2` avanza por los blancos hasta el prefijo `1`, donde acepta en `qf` sin moverse. La cinta queda solo con el número de Gödel, `1001000110001010001010010001100010100` para `S(0)+S(0)`, y el cabezal sobre su primer `1`.
-
-| Estado | Función |
-|---|---|
-| v0, vS, vL, vE | Adyacencia antes del `=`: inicio de término, tras `S`, tras `(`, término completo |
-| w0, wS, wL, wE | Lo mismo después del `=` (wE ya no admite otro `=`) |
-| qE1, qRet0 | Escribe el prefijo `1` tras `#` y regresa al inicio de la cinta |
-| b0, b1, b2, b3 | En cada término empareja cada `S` con un `)` marcándolos como `Y` y `Z` |
-| bF, bG | Verifican que no sobre ningún `)` y pasan al siguiente término |
-| rR | Restaura las marcas y pasa a e0 con el cabezal al inicio |
-| e0 | Marca con X el primer símbolo sin procesar; si encuentra `#`, lo borra y pasa a c1 |
-| t_0, t_S, t_abre, t_cierra, t_mas, t_igual, t_por, t_menos, t_div, t_pot | Un estado de viaje por símbolo: avanza al primer blanco y escribe el primer bit de su código |
-| w_xyz, u_yz, z_z | Escriben los bits restantes (compartidos por todos los símbolos) |
-| r1, r2 | Regresan por los bits y por la expresión hasta la última X |
-| c1, c2 | Limpieza: borran las X y recorren los blancos hasta el prefijo `1` |
-| qf | Aceptación: la cinta contiene solo el número de Gödel |
-
-## Pruebas
-
-```bash
-python -m pytest
-```
-
-| Archivo | Tipo | Qué verifica |
-|---|---|---|
-| `tests/test_parser.py` | Unitaria | Lectura del YAML, interpretación de transiciones, detección de configuraciones inválidas y advertencias (estados inalcanzables, transiciones muertas, símbolos sin usar) |
-| `tests/test_tape.py` | Unitaria | Inicialización, escritura y movimientos L/R/S de la cinta, incluso fuera de la entrada |
-| `tests/test_simulator.py` | Unitaria | Aceptación, rechazo, transiciones inexistentes, uso de la caché, registro de IDs y límite de pasos |
-| `tests/test_formatter.py` | Unitaria | Formato de la descripción formal, IDs, configuración final, resumen y advertencias |
-| `tests/test_dot.py` | Unitaria | Exportación del diagrama de estados a Graphviz (`--dot`) |
-| `tests/test_cli.py` | Integración | Ejecución completa desde la línea de comandos: errores, `--max-steps`, `--input`, `--quiet`, `--output`, `--step` y `--dot` |
-| `tests/test_machines.py` | Integración | Máquinas de demostración: la reconocedora se compara contra la definición del lenguaje en todas las cadenas sobre {a, b, c} de longitud ≤ 7, y la alteradora produce ww para todas las cadenas sobre {a, b} de longitud ≤ 7 |
-| `tests/test_godel_mode.py` | Unitaria | Etiqueta `modo`: transiciones sin caché, errores de configuración, símbolos desconocidos rechazados por la MT e IDs sin caché |
-| `tests/test_godel.py` | Integración | MT de Gödel, las tres fases: acepta exactamente la gramática (todas las cadenas sobre {0, S, (, ), +, =} de longitud ≤ 6 y sobre los 10 símbolos de longitud ≤ 5) y la cinta final es exactamente el binario de referencia (prefijo 1 + bloques de 4 bits) |
-
-## Video de demostración
-
-Enlace al video (YouTube, no listado): _pendiente_
+1. **Validación** (`v*`, `w*`, `b*`, `bF`, `bG`, `qE1`, `qRet0`, `rR`): acepta solo la gramática `N := 0 | S(N)`, `Suma := N (Op N)*` con `Op ∈ {+, -, *, /, ^}`, `Expr := Suma | Suma = Suma`. Rechaza paréntesis incorrectos, operadores mal colocados, más de un `=` y símbolos desconocidos. Los estados `v*`/`w*` revisan la adyacencia antes/después del `=`, y `b*` empareja cada `S` con un `)` (marcas `Y`/`Z`, restauradas por `rR`). Al terminar escribe `#1` a la derecha y deja el cabezal al inicio.
+2. **Codificación** (`e0`, `t_*`, `w_xyz`, `u_yz`, `z_z`, `r1`, `r2`): `e0` marca con `X` el primer símbolo sin procesar y pasa a un estado de viaje propio de ese símbolo (la memoria está en el estado). Este avanza al primer blanco y escribe el primer bit; los estados compartidos `w_xyz`, `u_yz` y `z_z` escriben los otros tres. `r1` y `r2` regresan a la última `X`. Al encontrar `#` lo borra y pasa a la limpieza.
+3. **Limpieza** (`c1`, `c2`, `qf`): `c1` borra las `X` hacia la izquierda y `c2` avanza por los blancos hasta el prefijo `1`, donde acepta en `qf`. La cinta queda solo con el número de Gödel y el cabezal sobre su primer `1`.

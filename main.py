@@ -9,7 +9,6 @@ import argparse
 import sys
 
 from turing import DEFAULT_MAX_STEPS, ConfigError, Outcome, collect_warnings, load_machine, simulate_all
-from turing.dot import to_dot
 from turing.formatter import (
     format_id_line,
     format_machine,
@@ -78,11 +77,6 @@ def main(argv=None):
         action="store_true",
         help="modo paso a paso: muestra una ID a la vez y espera Enter para avanzar a la siguiente",
     )
-    parser.add_argument(
-        "--dot",
-        metavar="archivo.dot",
-        help="genera un archivo Graphviz (.dot) con el diagrama de estados de la máquina",
-    )
     args = parser.parse_args(argv)
     if args.max_steps < 0:
         parser.error("--max-steps no puede ser negativo")
@@ -94,11 +88,6 @@ def main(argv=None):
     except ConfigError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
-
-    if args.dot:
-        with open(args.dot, "w", encoding="utf-8") as f:
-            f.write(to_dot(machine) + "\n")
-        print(f"Diagrama Graphviz guardado en '{args.dot}'")
 
     warnings = collect_warnings(machine)
 

@@ -1,10 +1,3 @@
-"""Interfaz gráfica (Tkinter) del simulador de Máquinas de Turing.
-
-Uso:
-    python interfaz.py
-    python interfaz.py machines/reconocedora.yaml
-"""
-
 import os
 import sys
 import tkinter as tk
@@ -21,15 +14,13 @@ from turing.formatter import (
 
 try:
     from PIL import Image, ImageTk
-except ImportError:  # Sin Pillow la interfaz funciona igual, solo sin fotografías.
+except ImportError:  
     Image = ImageTk = None
 
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 GODEL_PHOTO = "Agregar Archivo.png"
 TURING_PHOTO = "Agregar Archivo (3).png"
 PHOTO_SIZE = 120
-
-# Paleta: fondo crema, paneles marrón oscuro y cajas de texto casi blancas para el contraste.
 BG = "#EADFC8"
 HEADER_BG = "#3B2616"
 HEADER_FG = "#F6EBD2"

@@ -250,8 +250,6 @@ def _unreachable_state_warnings(machine):
 
 
 def _dead_transition_warnings(machine):
-    # La máquina se detiene en cuanto entra en un estado de aceptación, así que
-    # ninguna transición que parta de uno de esos estados llega a ejecutarse.
     return [
         f"La transición {t} nunca se ejecuta: '{t.state}' es un estado de aceptación "
         "y la máquina se detiene al entrar en él"
@@ -284,6 +282,5 @@ def _parse_inputs(raw, errors):
         elif isinstance(item, str):
             inputs.append(item)
         else:
-            # p.ej. 0101 sin comillas se lee como número y pierde su forma original
             errors.append(f"inputs[{i}]: '{item}' no es una cadena; escríbala entre comillas")
     return inputs

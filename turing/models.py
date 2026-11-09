@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -46,7 +45,7 @@ class TuringMachine:
     tape_alphabet: list
     initial_state: str
     accept_states: set
-    transitions: dict  # (estado, caché, símbolo leído) -> Transition
+    transitions: dict  
     inputs: list = field(default_factory=list)
     blank: str = BLANK
     mode: str = MODE_STANDARD
@@ -81,8 +80,8 @@ class InstantaneousDescription:
     step: int
     state: str
     cache: str
-    tape: tuple  # porción visible de la cinta
-    head: int  # índice del cabezal dentro de `tape`
+    tape: tuple  
+    head: int  
     show_cache: bool = True
 
     def __str__(self):
